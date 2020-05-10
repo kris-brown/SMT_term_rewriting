@@ -11,6 +11,9 @@
 
 int main(int argc, char** argv)
 {
+    if (argc!=2)
+        throw std::runtime_error("Must call with name of theory as argument");
+
     // Setup
     //-------
     const int depth = 2; // HYPERPARAMETER
@@ -203,7 +206,7 @@ int main(int argc, char** argv)
     if (res.isSat()){
         // Write model to file
         std::ofstream outfile;
-        outfile.open("file.dat");
+        outfile.open("build/model.dat");
         slv.printModel(outfile);
         outfile.close();
     }

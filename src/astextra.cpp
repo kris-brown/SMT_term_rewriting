@@ -1,7 +1,4 @@
-#include<stdexcept>
 #include <src/astextra.hpp>
-
-
 
 // Cartesian product of vector of vectors, taken from: https://stackoverflow.com/a/5279601
 void cart_product(

@@ -1,7 +1,6 @@
 #ifndef ASTEXTRA
 #define ASTEXTRA
 #include<vector>
-#include<stdexcept>
 typedef std::vector<int> Vi;
 typedef std::vector<Vi> Vvi;
 typedef std::vector<Vvi> Vvvi;
