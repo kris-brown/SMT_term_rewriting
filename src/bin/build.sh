@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # Create object files
-x=$(find . -name "*.cpp")
+x=$(find src -name "*.cpp")
 
 for i in $x; do
-    echo "$i"
     c++ -isystem /usr/local/include  -I$(pwd)  -Wno-c++17-extensions -Wall -std=gnu++11 -o  $i.o -c $i
 done
 

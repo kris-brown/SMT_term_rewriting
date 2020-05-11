@@ -276,7 +276,7 @@ Theory upgradeT(const Theory & t) {
 }
 
 int max_arity(const Theory & t) {
-    int m = 0;
+    int m = 1;
     for (auto && [k,v] : t.sorts) {
         if (v.args.size() > m) m=v.args.size();
     }

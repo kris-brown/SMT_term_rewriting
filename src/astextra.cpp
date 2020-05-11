@@ -1,11 +1,11 @@
-#include <src/astextra.hpp>
+#include "astextra.hpp"
+#include <src/cvc4extra.hpp>
 
-// Cartesian product of vector of vectors, taken from: https://stackoverflow.com/a/5279601
 void cart_product(
-    Vvi& rvvi,  // final result
-    Vi&  rvi,   // current result
-    Vvi::const_iterator me, // current input
-    Vvi::const_iterator end) // final input
+    Vvi& rvvi,
+    Vi&  rvi,
+    Vvi::const_iterator me,
+    Vvi::const_iterator end)
 {
     if(me == end) {
         rvvi.push_back(rvi);
@@ -21,7 +21,6 @@ void cart_product(
     }
 }
 //----------------------------------------------------------------------------------------------------------------
-// Path vector generation: we want (arity ^ depth) number of paths
 Vvi paths_n(const int&  depth, const int& arity) {
     Vi arg_inds;
     for (int i=0; i <= arity; i++)
@@ -32,7 +31,7 @@ Vvi paths_n(const int&  depth, const int& arity) {
     cart_product(output, out_tmp, input.begin(), input.end());
     return output;
 }
-// All paths of length 1, 2, ... depth
+
 Vvvi all_paths(const int&  depth, const int& arity) {
         Vvvi res;
         for (int i=1; i <= depth; i++) {
@@ -43,11 +42,284 @@ Vvvi all_paths(const int&  depth, const int& arity) {
 
 
 
-//----------------------------------------------------------------------------------------------------------------
-// HELPER FUNCTIONS FOR C++ API
+CDTuple create_datatypes(CVC::Solver & slv,
+                      const Theory & t,
+                      const int & depth) {
+    const int arity=max_arity(t);
+    const Vvvi paths = all_paths(depth,arity);
+    CVC::Sort Int = slv.getIntegerSort();
+    const char fr[2]  = {'f','r'}; // Forward/reverse
 
-// e.g. ast3 : (INT, AST, AST, AST) -> AST
-// = (LAMBDA(n:INT, x0:AST, x1:AST, x2:AST): ast(n, x0, x1, x2, None));
+    // AST
+    CVC::DatatypeDecl astSpec = slv.mkDatatypeDecl("AST");
+    CVC::DatatypeConstructorDecl ast("ast");
+    ast.addSelector("node", Int);
+    for (int i=0; i<=arity;i++)
+        ast.addSelectorSelf("a"+std::to_string(i));
+
+    astSpec.addConstructor(ast);
+    astSpec.addConstructor(CVC::DatatypeConstructorDecl("None"));
+    astSpec.addConstructor(CVC::DatatypeConstructorDecl("Error"));
+    CVC::Sort astSort = slv.mkDatatypeSort(astSpec);
+    const CVC::Datatype& astDT = astSort.getDatatype();
+    CVC::Term astCon = astDT.getConstructorTerm("ast");
+    CVC::Term node=astDT["ast"].getSelectorTerm("node");
+    CVC::Term isAST = astDT[0].getTesterTerm();
+    CVC::Term isNone = astDT[1].getTesterTerm();
+
+    Vt as;
+    for (int i=0; i!= arity+1; i++)
+        as.push_back(astDT["ast"].getSelectorTerm("a"+std::to_string(i)));
+    CVC::Term noneterm = slv.mkTerm(CVC::APPLY_CONSTRUCTOR, astDT.getConstructorTerm("None"));
+    CVC::Term errterm = slv.mkTerm(CVC::APPLY_CONSTRUCTOR, astDT.getConstructorTerm("Error"));
+
+    // PATH
+    CVC::DatatypeDecl pathSpec = slv.mkDatatypeDecl("Path");
+    pathSpec.addConstructor(CVC::DatatypeConstructorDecl("Empty"));
+    for (auto&& pp : paths){ for (auto&& p: pp){
+            CVC::DatatypeConstructorDecl pcon("P"+join(p));
+            pathSpec.addConstructor(pcon);
+    }}
+    CVC::Sort pathSort = slv.mkDatatypeSort(pathSpec);
+    const CVC::Datatype& pathDT = pathSort.getDatatype();
+    std::map<Vi,CVC::Term> pathcon;
+    for (auto&& ps : paths) { for (auto&& p : ps) {
+        pathcon[p] = slv.mkTerm(CVC::APPLY_CONSTRUCTOR, pathDT.getConstructorTerm("P"+join(p)));
+    }}
+    CVC::Term Empty = slv.mkTerm(CVC::APPLY_CONSTRUCTOR, pathDT.getConstructorTerm("Empty"));
+
+    // RULE
+    Vi rules; // +1/-1, +2/-2, etc. for each rule+direction
+    CVC::DatatypeDecl ruleSpec = slv.mkDatatypeDecl("Rule");
+    for (int i=1; i!=std::max(2,static_cast<int>(t.rules.size()+1)); i++){ for (auto&& d : fr) {
+            std::string name="R"+std::to_string(i)+ d;
+            CVC::DatatypeConstructorDecl rcon(name);
+            ruleSpec.addConstructor(rcon);
+            rules.push_back(i*(d=='f' ? 1 : -1));
+    }}
+    CVC::Sort ruleSort = slv.mkDatatypeSort(ruleSpec);
+    const CVC::Datatype& ruleDT = ruleSort.getDatatype();
+    std::map<int,CVC::Term> rulecon;
+    for (auto&& r:rules) {
+        std::string name="R"+std::to_string(std::abs(r))+(r>0 ? 'f' : 'r');
+        rulecon[r] = slv.mkTerm(CVC::APPLY_CONSTRUCTOR, ruleDT.getConstructorTerm(name));
+    }
+
+    // Convenience terms
+    //-----------------------
+    CVC::Term nInt = slv.mkVar(Int, "n");
+    CVC::Term sInt = slv.mkVar(Int, "step");
+    CVC::Term xTerm = slv.mkVar(astSort, "x");
+    CVC::Term yTerm = slv.mkVar(astSort, "y");
+    CVC::Term pTerm = slv.mkVar(pathSort, "p");
+    CVC::Term rTerm = slv.mkVar(ruleSort, "r");
+    CVC::Term nodeX = slv.mkTerm(CVC::APPLY_SELECTOR, node, xTerm);
+    CVC::Term noneX = slv.mkTerm(CVC::APPLY_TESTER, isNone, xTerm);
+    CVC::Term astX = slv.mkTerm(CVC::APPLY_TESTER, isAST, xTerm);
+
+    return std::make_tuple(
+        Int,astSort,pathSort,ruleSort,
+        astDT,pathDT,ruleDT,
+        astCon, node,isNone, isAST, noneterm, errterm,
+        Empty, nInt,sInt,xTerm,yTerm,pTerm,rTerm,nodeX,noneX,astX, as, rules, pathcon, rulecon);
+}
+
+std::tuple<Vt,Vt,CVC::Term> arity_funcs(CVC::Solver & slv,
+                         const int & arity,
+                         const CVC::Sort & Int,
+                         const CVC::Sort & astSort,
+                         const CVC::Datatype & astDT,
+                         const CVC::Term & astCon,
+                         const CVC::Term & nInt,
+                         const CVC::Term & xTerm,
+                         const CVC::Term & yTerm,
+                         const CVC::Term & noneterm,
+                         const CVC::Term & noneX,
+                         const CVC::Term & nodeX,
+                         const Vt & as
+    ) {
+    Vt xs;
+    for (int i=0; i!= arity+1; i++)
+        xs.push_back(slv.mkVar(astSort,"x"+std::to_string(i)));
+
+    // Vt As; CURRENTLY NOT NEEDED
+    // for (int i=0; i!= arity+1; i++) {
+    //     As.push_back(a_fun(slv,xTerm,astSort,Int,astDT,noneterm,noneX,i));}
+
+    Vt asts;
+    for (int i=0; i != arity+2; i++)
+        asts.push_back(ast_fun(slv,xs,nInt,astSort,astDT,noneterm,i));
+
+    CVC::Term Node = a_fun(slv,xTerm,astSort,Int,astDT,noneterm,noneX,-1);
+
+    Vt repls;
+    for (int i=0; i!= arity+1; i++)
+        repls.push_back(repl_fun(slv, xTerm, yTerm, astSort, noneterm, nodeX, astCon, noneX, as, arity, i));
+    return std::make_tuple(repls, asts, Node);
+}
+
+std::tuple<CVC::Term,CVC::Term> path_funcs(
+    CVC::Solver & slv,
+    const CVC::Sort &  astSort,
+    const CVC::Sort &  Int,
+    const CVC::Term & xTerm,
+    const CVC::Term & yTerm,
+    const CVC::Term & pTerm,
+    const CVC::Term & errterm,
+    const CVC::Term & Empty,
+    const Vt & as,
+    const Vt & repls,
+    const Vvvi & paths,
+    const std::map<Vi,CVC::Term> & pathcon) {
+    Vt pathConds{slv.mkTerm(CVC::EQUAL,pTerm,Empty)};
+    Vt replaceAtThens{xTerm}, getAtThens{xTerm};
+    Vt pathNumThens{slv.mkReal(-1)};
+    std::map<Vi,CVC::Term> replPs;
+    if (1) {
+    for (auto&& ps : paths) { for (auto&& p : ps) {
+        replPs[p] = replP_fun(slv,xTerm,yTerm,astSort,as,repls,p);
+        pathConds.push_back(slv.mkTerm(CVC::EQUAL,pTerm,pathcon.at(p)));
+        replaceAtThens.push_back(slv.mkTerm(CVC::APPLY_UF,replPs[p],xTerm,yTerm));
+        pathNumThens.push_back(slv.mkReal("-1"+join(p)));
+        getAtThens.push_back(pathterm(slv,xTerm,as,p));
+    }}
+    }
+    CVC::Term replaceAt = slv.defineFun("replaceAt",{pTerm,xTerm,yTerm}, astSort,
+                                        ITE(slv, pathConds, replaceAtThens, errterm));
+    CVC::Term getAt = slv.defineFun("getAt",{xTerm,pTerm}, astSort,
+                                    ITE(slv, pathConds, getAtThens, errterm));
+    CVC::Term pathNum = slv.defineFun("pathNum",{pTerm}, Int,
+                                       ITE(slv, pathConds, pathNumThens, slv.mkReal(0)));
+    return std::make_tuple(getAt,replaceAt);
+}
+
+std::tuple<Tmap, Tmap, CVC::Term> rule_funcs(
+    CVC::Solver & slv,
+    const Theory & t,
+    const CVC::Sort &  astSort,
+    const CVC::Sort &  Int,
+    const CVC::Term &  xTerm,
+    const CVC::Term &  rTerm,
+    const CVC::Term &  errterm,
+    const CVC::Term &  sInt,
+    const CVC::Term &  node,
+    const std::map<int,CVC::Term> & rulecon,
+    const Vt &  as,
+    const Vt &  asts,
+    const Vi & rules) {
+    Vt ruleConds, ruleThens;
+    Tmap pat,rterm;
+    std::map<std::string,int> syms = symcode(t);
+
+    for (auto&& r : rules) {
+        pat[r] = pat_fun(slv,xTerm,node,r, as,t,syms);
+        rterm[r] = rterm_fun(slv,xTerm,sInt,astSort,r, t,asts,as,syms);
+        ruleConds.push_back(slv.mkTerm(CVC::AND,slv.mkTerm(CVC::EQUAL,rTerm,rulecon.at(r)),
+                                                slv.mkTerm(CVC::APPLY_UF,pat[r],xTerm)));
+        ruleThens.push_back(slv.mkTerm(CVC::APPLY_UF,rterm[r],xTerm,sInt));
+    }
+
+    CVC::Term rewriteTop = slv.defineFun("rewriteTop",{rTerm,xTerm,sInt}, astSort,
+                                        ITE(slv, ruleConds, ruleThens, errterm));
+    return std::make_tuple(pat,rterm,rewriteTop);
+}
+
+std::tuple<CVC::Term,Vt> rewrite_funcs(
+    CVC::Solver & slv,
+    const CVC::Sort & astSort,
+    const CVC::Sort & ruleSort,
+    const CVC::Sort & pathSort,
+    const CVC::Term & xTerm,
+    const CVC::Term & rTerm,
+    const CVC::Term & pTerm,
+    const CVC::Term & sInt,
+    const CVC::Term & astX,
+    const CVC::Term & errterm,
+    const CVC::Term & replaceAt,
+    const CVC::Term & rewriteTop,
+    const CVC::Term & getAt) {
+        CVC::Term rewrite = slv.defineFun("rewrite",{xTerm,rTerm,pTerm,sInt},astSort,
+        slv.mkTerm(CVC::ITE,
+                astX,
+                slv.mkTerm(CVC::APPLY_UF,{
+                            replaceAt,
+                            pTerm,
+                            xTerm,
+                            slv.mkTerm(CVC::APPLY_UF, {
+                                        rewriteTop,
+                                        rTerm,
+                                        slv.mkTerm(CVC::APPLY_UF,getAt,xTerm,pTerm),
+                                        sInt})}),
+                errterm));
+
+    // Finite rewrite functions
+    Vt rs, ps, rws;
+    for (int i=1; i < 8; i++) {
+        rs.push_back(slv.mkConst(ruleSort, "r"+std::to_string(i)));
+        ps.push_back(slv.mkConst(pathSort, "p"+std::to_string(i)));
+        rws.push_back(rw_fun(slv,i,astSort,rewrite,rs,ps));
+    }
+    return std::make_tuple(rewrite,rws);
+}
+
+STuple setup(CVC::Solver & slv,
+             const Theory & t,
+             const int & depth,
+             const bool incl_rewrite,
+             const bool incl_rule,
+             const bool incl_path,
+             const bool incl_arity) {
+    const int arity=max_arity(t);
+    const Vvvi paths = all_paths(depth,arity);
+
+    // Declare datatypes
+    CVC::Sort Int,astSort,pathSort,ruleSort;
+    CVC::Datatype astDT,pathDT,ruleDT;
+    CVC::Term astCon, node, isNone, isAST, noneterm, errterm, Empty, nInt,sInt,xTerm,yTerm,pTerm,rTerm,nodeX,noneX,astX;
+    Vt as; Vi rules;
+    std::map<Vi,CVC::Term> pathcon; Tmap rulecon;
+    std::tie (
+        Int,astSort,pathSort,ruleSort,
+        astDT,pathDT,ruleDT,
+        astCon, node, isNone, isAST, noneterm, errterm,
+        Empty, nInt,sInt,xTerm,yTerm,pTerm,rTerm,nodeX,noneX,astX, as, rules, pathcon, rulecon) = create_datatypes(slv,t,depth);
+
+    // Things generated per-argument
+    Vt repls, asts;
+    CVC::Term Node;
+    if (incl_arity)
+        std::tie (repls, asts, Node) = arity_funcs(slv,arity,Int,astSort,astDT,
+            astCon,nInt,xTerm,yTerm,noneterm,noneX,nodeX, as);
+
+    // Things generated per-path
+    CVC::Term getAt, replaceAt;
+    if (incl_path)
+        std::tie (getAt, replaceAt) = path_funcs(slv, astSort, Int, xTerm, yTerm, pTerm,
+            errterm, Empty, as, repls, paths, pathcon);
+
+    // Things generated per-rule
+    Tmap rpat, rterm;
+    CVC::Term rewriteTop;
+    if (incl_rule)
+        std::tie (rpat,rterm,rewriteTop) = rule_funcs(slv,t,astSort,Int,xTerm,rTerm,
+            errterm,sInt,node,rulecon,as,asts,rules);
+
+
+    // Overarching rewrite infrastructure
+    Vt rws;
+    CVC::Term rewrite;
+    if (incl_rewrite)
+        std::tie (rewrite, rws) = rewrite_funcs(slv,astSort,ruleSort,pathSort,xTerm,rTerm,
+            pTerm,sInt,astX,errterm,replaceAt,rewriteTop,getAt);
+
+    // Things of potential interest for other functions to use
+    return std::make_tuple(Int,astSort,pathSort,ruleSort,
+        astDT, pathDT, ruleDT,
+        astCon, node, isNone, isAST, noneterm, errterm, Empty,
+        as,rules,repls,asts);
+}
+//-----------------------------------------------------------------
+
 CVC::Term ast_fun(CVC::Solver & slv,
                   const Vt & xs,
                   const CVC::Term & nInt,
@@ -66,9 +338,6 @@ CVC::Term ast_fun(CVC::Solver & slv,
     return ret;
 }
 
-// Safe access to the selectors of the AST constructor
-// e.g.    A2 : T -> T   = LAMBDA (x:T): IF x = None THEN None ELSE a2(x) ENDIF;
-// Also: Node : T -> INT = LAMBDA (x:T): IF x = None THEN 0    ELSE node(x) ENDIF;
 CVC::Term a_fun(CVC::Solver & slv,
                 const CVC::Term & x,
                 const CVC::Sort & astSort,
@@ -88,8 +357,7 @@ CVC::Term a_fun(CVC::Solver & slv,
     CVC::Term ret = slv.defineFun(name,args,s,ite);
     return ret;
 }
-// Replace a top-level argument of a term
-// replace2 : (T,T) -> T = LAMBDA (x,y: T):ast(node(x),a0(x),a1(x),y,a3(x));
+
 CVC::Term repl_fun(CVC::Solver & slv,
                 const CVC::Term & x,
                 const CVC::Term & y,
@@ -115,9 +383,7 @@ CVC::Term repl_fun(CVC::Solver & slv,
 
     return ret;
 }
-/* Replace a specific subnode of a term
-replaceP321 : (T, T) -> T = LAMBDA(x,y:T): replace3(x, replace2(a3(x), replace1(a2(a3(x)), y)));
-*/
+
 CVC::Term replP_fun(CVC::Solver & slv,
                 const CVC::Term & x,
                 const CVC::Term & y,
@@ -125,9 +391,9 @@ CVC::Term replP_fun(CVC::Solver & slv,
                 const Vt & as,
                 const Vt & reps,
                 const Vi & p) {
-    CVC::Term arg=y; // TBD
+    CVC::Term arg=y;
     for (int i=0;i != p.size(); i++) {
-        CVC::Term subx=x; // JUST TEMPORARILY -- TODO
+        CVC::Term subx=x;
         for (int j=p.size()-1;i!=j;j--)
             subx = slv.mkTerm(CVC::APPLY_SELECTOR,as.at(p.at(j)),subx);
         arg=slv.mkTerm(CVC::APPLY_UF,reps.at(p.at(i)),subx,arg);
@@ -144,9 +410,10 @@ CVC::Term pathterm(const CVC::Solver & slv,
                    const Vi & pth) {
     CVC::Term x = root;
     for (auto&& i : pth)
-        x = slv.mkTerm(CVC::APPLY_SELECTOR, selectors[i], x);
+        x = slv.mkTerm(CVC::APPLY_SELECTOR, selectors.at(i), x);
     return x;
 }
+
 
 CVC::Term pat_fun(const CVC::Solver & slv,
                   const CVC::Term & x,
@@ -156,6 +423,10 @@ CVC::Term pat_fun(const CVC::Solver & slv,
                   const Theory & thry,
                   const std::map<std::string,int> & symcode) {
     std::string name="r"+std::to_string(std::abs(r))+(r>0 ? 'f' : 'r')+"pat";
+
+    if (thry.rules.empty())
+        return slv.defineFun(name,{x},slv.getBooleanSort(),slv.mkTrue());
+
     Rule rule = thry.rules.at(std::abs(r)-1);
     Expr term = r>0 ? rule.t1 : rule.t2;
     std::map<size_t,Vvi> groups = distinct(gethash(term));
@@ -183,7 +454,6 @@ CVC::Term pat_fun(const CVC::Solver & slv,
 }
 
 
-// Render a (sub)term in some argument term (make reference to subexpressions when possible)
 CVC::Term construct(const CVC::Solver & slv,
                     const Expr & tar,
                     const Vi & currpth,
@@ -219,16 +489,15 @@ CVC::Term construct(const CVC::Solver & slv,
     }
 }
 
-
 std::map<std::string,int> mk_freevar(Expr x, Expr y) {
-    std::set<std::string> symx,symy,diff;
-    addx(symx,x); addx(symy,y,VarNode);
+    std::set<std::string> symx,symy;
+    addx(symx,x,VarNode); addx(symy,y,VarNode);
 
     std::map<std::string,int> res;
     int i = 1;
-    for (auto && e : symx)
+    for (auto && e : symx){
     if (symy.find(e)==symy.end())
-        res[e]=i++;
+        res[e]=i++;}
     return res;
 }
 
@@ -243,6 +512,9 @@ CVC::Term rterm_fun(const CVC::Solver & slv,
                     const Vt & selectors,
                     std::map<std::string,int> & symcode) {
     std::string name="r"+std::to_string(std::abs(r))+(r>0 ? 'f' : 'r')+"term";
+    if (thry.rules.empty())
+     return slv.defineFun(name,{x,s},astSort,x);
+
     Rule rule = thry.rules.at(std::abs(r)-1);
     Expr src = r>0 ? rule.t1 : rule.t2;
     Expr tar = r>0 ? rule.t2 : rule.t1;
@@ -267,7 +539,7 @@ CVC::Term rw_fun(const CVC::Solver & slv,
     Vt xs{slv.mkVar(astSort,"x0")};
     for (int i=0; i<imax; i++){
         CVC::Term x=slv.mkTerm(CVC::APPLY_UF,
-             {rewrite, xs.back(), rs[i], ps[i], slv.mkReal(i+1)});
+             {rewrite, xs.back(), rs.at(i), ps.at(i), slv.mkReal(i+1)});
         xs.push_back(x);
     }
     CVC::Term ret = slv.defineFun("rewrite"+std::to_string(imax),
