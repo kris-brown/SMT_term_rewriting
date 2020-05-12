@@ -8,6 +8,17 @@ Currently, a model is generated that has functions for:
  - Rewriting (sub)expressions according to a rewrite rule
  - Testing whether a rewrite can be done in some fixed number of steps.
 
+## Project structure
+- `ast.hpp`
+    - The main program which takes a user-specified theory and creates a CVC4 model.
+- `astextra.hpp`
+    - The majority of the code, aimed at taking a GAT and generating relevant CVC4 terms/functions.
+- `cvc4extra.hpp`
+    - A few utility functions that are purely related to CVC4.
+- `theory.hpp`
+    - Datastructures for GATs and expressions, algorithms for substitution/pattern matching/validating/etc.
+- `theories/theories.hpp`
+    - It `#include`s the GATs in this folder and provides a means of iterating through them.
 
 ## TO-DO
  - Add more tests to make sure the generated CVC4 functions behave as expected
