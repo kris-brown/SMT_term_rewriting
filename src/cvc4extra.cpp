@@ -1,4 +1,5 @@
 #include <src/cvc4extra.hpp>
+#include <fstream>
 
 
 CVC4::api::Term mkConst(const CVC4::api::Solver & slv,
@@ -18,4 +19,14 @@ CVC4::api::Term ITE(const CVC4::api::Solver & slv,
         ret = slv.mkTerm(CVC4::api::ITE,ifs.at(i), thens.at(i), ret);
     }
     return ret;
+}
+
+void writeModel(CVC4::api::Solver & slv, std::string pth) {
+    CVC4::api::Result res = slv.checkSat();
+    if (res.isSat()){ // Write model to file
+        std::ofstream outfile;
+        outfile.open(pth);
+        slv.printModel(outfile);
+        outfile.close();
+    }
 }

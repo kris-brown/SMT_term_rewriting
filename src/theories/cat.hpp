@@ -1,5 +1,5 @@
 
-#include <src/theory.hpp>
+#include "../theory.hpp"
 
 Theory cat() {
     Expr Ob=Sort("Ob");
@@ -20,9 +20,6 @@ Theory cat() {
     Rule idr{"idr","Right identity",f,fid};
     Rule asc{"asc","Associativity",f_gh,fg_h};
 
-    std::map<std::string,SortDecl> sorts{{"Ob",dOb}, {"Hom",dHom}};
-    std::map<std::string,OpDecl> ops{{"id",idOp},{"cmp",cmpOp}};
-    std::vector<Rule> rules{idl,idr,asc};
-    return {"cat", sorts,ops,rules};
+    return {"cat", std::vector<SortDecl>{dOb, dHom}, {idOp,cmpOp}, {idl,idr,asc}};
 
 }

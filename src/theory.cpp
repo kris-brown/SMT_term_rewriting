@@ -64,6 +64,45 @@ std::ostream & operator << (std::ostream &out, const Expr &e)
     return out;
 }
 
+ // Safe constructor
+ std::map<std::string,SortDecl> Theory::make_sdict(std::vector<SortDecl> s) {
+     std::map<std::string,SortDecl> sdict;
+    for (auto && sd : s) sdict.insert({sd.sym,sd});
+    return sdict;
+}
+ std::map<std::string,OpDecl> Theory::make_odict(std::vector<OpDecl> o) {
+     std::map<std::string,OpDecl> odict;
+    for (auto && od : o) odict.insert({od.sym,od});
+    return odict;
+}
+
+Theory::Theory() : name("Default"), sorts({}), ops({}), rules ({}) {}
+
+Theory::Theory(const std::string n,
+           const std::vector<SortDecl> s,
+           const std::vector<OpDecl> o,
+           const std::vector<Rule> r) :
+    name(n),
+    sorts(make_sdict(s)),
+    ops(make_odict(o)),
+    rules(r)
+    {validate_theory();}
+
+Theory::Theory(const std::string n,
+           const std::map<std::string,SortDecl> s,
+           const  std::map<std::string,OpDecl> o,
+           const std::vector<Rule> r) :
+    name(n), sorts(s), ops(o), rules(r) {validate_theory();}
+
+
+void Theory::validate_theory(){
+    // TBD
+}
+
+void Theory::validate_sorted_theory(){
+    // TBD
+}
+
 // Simple Constructors of Exprs
 Expr Sort(const std::string & sym, const Ve & args) {
     return Expr{sym, SortNode, args};
@@ -187,7 +226,7 @@ Expr infer(const std::map<std::string,SortDecl>&  sorts,
              const std::string & sym,
              const Ve & args) {
     if (ops.find(sym)==ops.end())
-        throw std::runtime_error("inferring a symbol not in ops");
+        throw std::runtime_error("inferring a symbol ("+sym+")not in ops");
 
     //std::cout << "inferring '" << sym << "' with args:" << std::endl;
     //for (auto && a:args) std::cout << "\t" << a << std::endl;
@@ -272,6 +311,7 @@ Theory upgradeT(const Theory & t) {
         ops.insert(std::pair<std::string,OpDecl>(k,upgrade(sorts,ops,v)));
     for (auto && r : t.rules) {rules.push_back(upgrade(sorts,ops,r));}
     Theory t2{t.name,sorts,ops,rules};
+    t2.validate_sorted_theory();
     return t2;
 }
 

@@ -1,4 +1,4 @@
-#include <src/theory.hpp>
+#include "../theory.hpp"
 
 Theory intarray() {
 

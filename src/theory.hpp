@@ -56,6 +56,21 @@ struct Theory {
     const std::map<std::string,SortDecl> sorts;
     const std::map<std::string,OpDecl> ops;
     const std::vector<Rule> rules;
+    Theory();
+    Theory(const std::string n,
+           const std::vector<SortDecl> s,
+           const std::vector<OpDecl> o,
+           const std::vector<Rule> r);
+    Theory(const std::string n,
+           const std::map<std::string,SortDecl> s,
+           const std::map<std::string,OpDecl> o,
+           const std::vector<Rule> r);
+
+    void validate_sorted_theory();
+    private :
+    void validate_theory();
+    std::map<std::string,SortDecl> make_sdict(std::vector<SortDecl> s);
+    std::map<std::string,OpDecl> make_odict(std::vector<OpDecl> o);
 };
 
 // Simple Constructors of Exprs

@@ -19,4 +19,10 @@ CVC4::api::Term ITE(const CVC4::api::Solver & slv,
                     const Vt & ifs,
                     const Vt & thens,
                     const CVC4::api::Term & otherwise);
+
+// Print model if it is sat to a path
+void writeModel(CVC4::api::Solver & slv, std::string pth);
+
 #endif
+
+
