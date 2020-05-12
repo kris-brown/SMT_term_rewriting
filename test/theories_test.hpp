@@ -1,10 +1,18 @@
 #include "catch.hpp"
-#include "../src/theories/cat.hpp"
-#include "../src/theories/intarray.hpp"
-#include "../src/theories/boolalg.hpp"
+#include "../src/theories/theories.hpp"
+
+// Needed to test running main program on theories
+#include "../src/cvc4extra.hpp"
+#include "../src/astextra.hpp"
 
 TEST_CASE("cat") {
-    CHECK_NOTHROW(upgradeT(cat()));
-    CHECK_NOTHROW(upgradeT(intarray()));
-    CHECK_NOTHROW(upgradeT(boolalg()));
+    for (auto && t: alltheories()) {
+        CHECK_NOTHROW(upgradeT(t));
+        CVC::Solver slv;
+        slv.setOption("produce-models", "true");
+        setup(slv,t,2);
+        writeModel(slv,"build/"+t.name+".dat");
+    }
+
+
 }
