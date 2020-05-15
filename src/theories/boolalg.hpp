@@ -10,8 +10,8 @@ Theory boolalg() {
    OpDecl dTop{"T","⊤",Bool};
    OpDecl dBot{"F","⊥",Bool};
    OpDecl dNeg{"N","(¬{})",Bool,{b}};
-   OpDecl dAnd{"A","({}∧{})",Bool,{b,b}};
-   OpDecl dOr{"O","({}∨{})",Bool,{b,b}};
+   OpDecl dAnd{"A","({}∧{})",Bool,{x,y}};
+   OpDecl dOr{"O","({}∨{})",Bool,{x,y}};
 
     auto mkId = [=](std::string op1,std::string op2) {
         return Rule{op1+" identity", "", b, App(op1,{b,App(op2)})};};

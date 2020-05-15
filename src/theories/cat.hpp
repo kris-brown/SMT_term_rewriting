@@ -14,7 +14,7 @@ Theory cat() {
     SortDecl dHom{"Hom","({}⇒{})",{A,B},"Hom-set of morphisms"};
 
     OpDecl idOp{"id","id({})",HomAA,{A},"Identity morphism"};
-    OpDecl cmpOp{"cmp","({} ⋅ {})",HomAC,{f,g},"Identity morphism"};
+    OpDecl cmpOp{"cmp","({} ⋅ {})",HomAC,{f,g},"Composition of morphisms"};
 
     Rule idl{"idl","Left identity",f,idf};
     Rule idr{"idr","Right identity",f,fid};

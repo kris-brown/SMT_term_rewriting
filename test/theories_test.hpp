@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "../external/catch.hpp"
 #include "../src/theories/theories.hpp"
 
 // Needed to test running main program on theories

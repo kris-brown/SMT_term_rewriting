@@ -158,40 +158,6 @@ std::tuple<Vt,Vt,CVC::Term> arity_funcs(CVC::Solver & slv,
     return std::make_tuple(repls, asts, Node);
 }
 
-std::tuple<CVC::Term,CVC::Term> path_funcs(
-    CVC::Solver & slv,
-    const CVC::Sort &  astSort,
-    const CVC::Sort &  Int,
-    const CVC::Term & xTerm,
-    const CVC::Term & yTerm,
-    const CVC::Term & pTerm,
-    const CVC::Term & errterm,
-    const CVC::Term & Empty,
-    const Vt & as,
-    const Vt & repls,
-    const Vvvi & paths,
-    const std::map<Vi,CVC::Term> & pathcon) {
-    Vt pathConds{slv.mkTerm(CVC::EQUAL,pTerm,Empty)};
-    Vt replaceAtThens{xTerm}, getAtThens{xTerm};
-    Vt pathNumThens{slv.mkReal(-1)};
-    std::map<Vi,CVC::Term> replPs;
-    if (1) {
-    for (auto&& ps : paths) { for (auto&& p : ps) {
-        replPs[p] = replP_fun(slv,xTerm,yTerm,astSort,as,repls,p);
-        pathConds.push_back(slv.mkTerm(CVC::EQUAL,pTerm,pathcon.at(p)));
-        replaceAtThens.push_back(slv.mkTerm(CVC::APPLY_UF,replPs[p],xTerm,yTerm));
-        pathNumThens.push_back(slv.mkReal("-1"+join(p)));
-        getAtThens.push_back(pathterm(slv,xTerm,as,p));
-    }}
-    }
-    CVC::Term replaceAt = slv.defineFun("replaceAt",{pTerm,xTerm,yTerm}, astSort,
-                                        ITE(slv, pathConds, replaceAtThens, errterm));
-    CVC::Term getAt = slv.defineFun("getAt",{xTerm,pTerm}, astSort,
-                                    ITE(slv, pathConds, getAtThens, errterm));
-    CVC::Term pathNum = slv.defineFun("pathNum",{pTerm}, Int,
-                                       ITE(slv, pathConds, pathNumThens, slv.mkReal(0)));
-    return std::make_tuple(getAt,replaceAt);
-}
 
 std::tuple<Tmap, Tmap, CVC::Term> rule_funcs(
     CVC::Solver & slv,
@@ -291,26 +257,8 @@ STuple setup(CVC::Solver & slv,
         std::tie (repls, asts, Node) = arity_funcs(slv,arity,Int,astSort,astDT,
             astCon,nInt,xTerm,yTerm,noneterm,noneX,nodeX, as);
 
-    // Things generated per-path
-    CVC::Term getAt, replaceAt;
-    if (incl_path)
-        std::tie (getAt, replaceAt) = path_funcs(slv, astSort, Int, xTerm, yTerm, pTerm,
-            errterm, Empty, as, repls, paths, pathcon);
-
-    // Things generated per-rule
-    Tmap rpat, rterm;
-    CVC::Term rewriteTop;
-    if (incl_rule)
-        std::tie (rpat,rterm,rewriteTop) = rule_funcs(slv,t,astSort,Int,xTerm,rTerm,
-            errterm,sInt,node,rulecon,as,asts,rules);
 
 
-    // Overarching rewrite infrastructure
-    Vt rws;
-    CVC::Term rewrite;
-    if (incl_rewrite)
-        std::tie (rewrite, rws) = rewrite_funcs(slv,astSort,ruleSort,pathSort,xTerm,rTerm,
-            pTerm,sInt,astX,errterm,replaceAt,rewriteTop,getAt);
 
     // Things of potential interest for other functions to use
     return std::make_tuple(Int,astSort,pathSort,ruleSort,

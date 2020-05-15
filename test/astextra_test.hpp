@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "../external/catch.hpp"
 #include <fstream>
 #include "../src/astextra.hpp"
 #include "../src/cvc4extra.hpp"
@@ -59,12 +59,5 @@ TEST_CASE("replace1"){
     CHECK(slv.checkEntailed(assert1).isEntailed());
     CHECK(slv.checkEntailed(assert2).isEntailed());
 
-    // Log output model
-    CVC::Result res = slv.checkSat();
-
-    std::ofstream outfile;
-    outfile.open("build/test/replacetest.dat");
-    slv.printModel(outfile);
-    outfile.close();
-
+    writeModel(slv, "test/replacetest.dat"); // Log output model
  }

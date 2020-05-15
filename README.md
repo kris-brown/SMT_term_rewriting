@@ -1,14 +1,13 @@
 # SMT_term_rewriting
 
-Generalized algebraic theories (GATs) consist of sort declarations (which can be dependent types), operator declarations, and equations (between sorts or terms). This is a very expressive language, but to be useful we must be able to identify when terms are equal or not equal modulo the equations of the theory. Although this is an undecidable problem in general, we can convert the question of whether two terms are equal into a logic problem which can be solved by a SMT solver through finite model checking. This strategy has at least two caveats: we are restricted to checking whether a path of rewrites exists up to a finite length, and we can apply rewrites only up to a finite depth from the root of any term.
+Generalized algebraic theories (GATs) consist of:
+- declaring types of entities (called sorts, which can be dependent on values, like "List of length `i`" for some `i::Int`),
+- operator declarations (which can be thought of as functions among terms inhabiting the above sorts)
+- equations (notions of when two sorts or two terms are equal).
 
-Currently, a model is generated that has functions for:
- - Constructing expressions
- - Checking if expressions match a pattern for a rewrite rule
- - Rewriting (sub)expressions according to a rewrite rule
- - Testing whether a rewrite can be done in some fixed number of steps.
+This is a very expressive language, but to be useful we must be able to identify when arbitrary terms are equal or not with respect to the equations of the theory. Although this is an undecidable problem in general, we can convert the question of whether two terms are equal into a logic problem which can be solved by a SMT solver through finite model checking. This strategy has at least two caveats: we are restricted to checking whether a path of rewrites exists up to a finite length, and we can apply rewrites only up to a finite depth from the root of any term.
 
-## Project structure
+## Source code structure
 - `ast.hpp`
     - The main program which takes a user-specified theory and creates a CVC4 model.
 - `astextra.hpp`
@@ -28,8 +27,37 @@ Currently, a model is generated that has functions for:
 
 ## Usage
 
-GATs can be added to the `src/theories` folder, along with a corresponding additional line to the `alltheories` function in `src/theories/theories.hpp`.
+GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder. To make these accessible, an additional line must be added to the `alltheories` function in `src/theories/theories.hpp`. However, at runtime it's also possible to point to a file with a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder. This is an snippet of the theory of arrays, to which we can read and write objects:
+```
+Sort Ob "Ob" "Some datatype that can be stored in an array" []
+Sort N "Nat" "A natural number: 0, 1, 2, ..." []
+Sort B "Bool" "Either true or false" []
+Sort Arr "Arr" "An array that can be indexed by natural numbers." []
 
-To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). Run the executable with the name of the theory as a command line argument, e.g. `./build/ast intarray` (optionally add a integer to specify path depth). This will produce a file `build/<theoryName>.dat`.
+Op S "S({})" "Successor, e.g. S(0)=1" I [i:N]
+Op E "({}≡{})" "Equality of numbers" B [i:N, j:N]
+Op ite "ite({},{},{})" "If-then-else" Ob [b:B, o:Ob, p:Ob]
+Op read "read({},{})" "Read array A at position i" Ob [A:Arr, i:N]
+Op write "write({},{},{}) "Write object o to position i" Arr [A:Arr, i:N, o:Ob]
 
-All theories get tested in `test/theories_test.hpp`, so running the test suite (`test/test.cpp`) is tantamount to running the main program on all of those theories.
+Rule row "Read-over-write: if indices not equal, look at previous write"
+    read(write(A:Arr, i:N, o:Ob), j:N)
+    ite(E(i:N, j:N), o:Ob, read(A:Arr,j:N))
+Rule eq1 "Recursively peel of successor"
+    E(i:N,j:N)
+    E(S(i:N),S(j:N))
+```
+
+As an example with sorts that depend on values, consider the theory of categories:
+```
+Sort Ob "Ob" "Objects in a category" []
+Sort Hom "({}⇒{})" "Hom-set of morphisms" [A:Ob, B:Ob]
+
+Op id "id({})" "Identity morphism" Hom(A:Ob, A:Ob) [A:Ob]
+Op cmp "({} ⋅ {})" "Composition of morphisms" Hom(A:Ob, C:Ob) [f:Hom(A:Ob,B:Ob), g:Hom(B:Ob, C:Ob)]
+```
+
+The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important because the main program requires a path to file with pairs of expressions to be tested for equality, for example `data/arrayterms.dat`.
+
+To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). Run the executable with the name of the theory (or a path to a theory file) as a command line argument, e.g. `./build/ast natarray data/natarray1.dat`, where the second argument points to the expressions tested for equality (optionally add a integer argument to specify path depth).
+

@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     slv.setOption("produce-models", "true");
     setup(slv, t, depth);
     std::cout << "Expect sat. CVC4: " << slv.checkSat() << std::endl;
-    writeModel(slv,"build/model.dat");
+    writeModel(slv,"model.dat");
     return 0;
 }
 

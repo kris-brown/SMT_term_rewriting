@@ -25,7 +25,7 @@ void writeModel(CVC4::api::Solver & slv, std::string pth) {
     CVC4::api::Result res = slv.checkSat();
     if (res.isSat()){ // Write model to file
         std::ofstream outfile;
-        outfile.open(pth);
+        outfile.open("build/"+pth);
         slv.printModel(outfile);
         outfile.close();
     }

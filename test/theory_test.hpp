@@ -1,5 +1,6 @@
-#include "catch.hpp"
+#include "../external/catch.hpp"
 #include "../src/theory.hpp"
+#include "../src/theories/theories.hpp"
 
 TEST_CASE("Expr Constructor") {
     // Symbol is empty
@@ -37,4 +38,21 @@ TEST_CASE("Sub") {
     CHECK(sub(fxx,m)==fgygy);
 }
 
-// AND SO ON
+TEST_CASE("expr parser and printer") {
+    Theory t=natarray();
+    Vx xs = parse_exprs(t,"data/arrayterms.dat");
+    for (auto x: xs){
+        CHECK(parse_expr(t, print(t,x))==x);}
+}
+
+TEST_CASE("parse theory") {
+    Theory t1 = parseTheory("data/category.dat");
+    Theory t2 = cat();
+    CHECK(print(t1)==print(t2));
+    CHECK(t1.sorts==t2.sorts);
+    CHECK(t1.ops==t2.ops);
+    CHECK(t1.rules==t2.rules);
+    CHECK(t1==t2);
+
+}
+

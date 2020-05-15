@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <src/theory.hpp>
 
  // Safe constructor
@@ -37,12 +38,83 @@ bool operator==(const Expr& lhs, const Expr& rhs){
 bool operator!=(Expr const&x, Expr const&y) {
     return !(x==y);
 }
+bool operator==(const SortDecl& lhs, const SortDecl& rhs){
+    return lhs.sym==rhs.sym && lhs.pat==rhs.pat && lhs.args==rhs.args && lhs.desc==rhs.desc;
+}
+bool operator!=(SortDecl const&x, SortDecl const&y) {
+    return !(x==y);
+}
+bool operator==(const OpDecl& lhs, const OpDecl& rhs){
+    return lhs.sym==rhs.sym && lhs.pat==rhs.pat && lhs.sort==rhs.sort && lhs.args==rhs.args&& lhs.desc==rhs.desc;
+}
+bool operator!=(OpDecl const&x, OpDecl const&y) {
+    return !(x==y);
+}
+bool operator==(const Rule& lhs, const Rule& rhs){
+    return lhs.name==rhs.name && lhs.t1==rhs.t1 && lhs.t2 ==rhs.t2 && lhs.desc==rhs.desc;
+}
+bool operator!=(Rule const&x, Rule const&y) {
+    return !(x==y);
+}
+bool operator==(const Theory& lhs, const Theory& rhs){
+    return lhs.name==rhs.name && lhs.sorts==rhs.sorts && lhs.ops==rhs.ops && lhs.rules==rhs.rules;
+}
+bool operator!=(Theory const&x, Theory const&y) {
+    return !(x==y);
+}
 
-std::ostream & operator << (std::ostream &out, const Expr &e)
-{
-    if (e.kind == VarNode){
-        out << e.sym<< ":" << e.args.at(0);
+std::string print(const Theory & t, const Expr & e) {
+    if (e.kind == VarNode)
+        return e.sym + ":" + print(t,e.args.at(0));
+    else {
+        NodeType firstchild = e.args.size() ? e.args.at(0).kind : VarNode;
+        bool sorted_app= (firstchild==SortNode) && (e.kind==AppNode);
+        Vs children;
+        int i=0;
+
+        for (auto && a:e.args) {
+            if ((i!=0) || (!sorted_app)) {
+                children.push_back(print(t,a));
+                i++;
+            }
         }
+        std::string pat= ((e.kind==SortNode) ? t.sorts.at(e.sym).pat : t.ops.at(e.sym).pat);
+        Vs syms=split(pat,"{}");
+        std::string ret;
+        for (int i=0;i!=children.size();i++)
+            ret+=syms.at(i) + children.at(i);
+
+        return ret+syms.back();
+    }
+}
+
+std::string print(const Theory & t, const SortDecl & x){
+    Vs args;
+    for (auto && a:x.args) args.push_back(print(t,a));
+    return "Sort: "+x.sym+" "+x.pat+"\n\t"+join(args,"\n\t");
+}
+std::string print(const Theory & t, const OpDecl & x){
+    Vs args;
+    for (auto && a:x.args) args.push_back(print(t,a));
+    return "Op: "+x.sym+" "+x.pat+"\n\t"+join(args,"\n\t");
+
+}
+std::string print(const Theory & t, const Rule & x){
+    return "Rule: "+x.name+"\n\t"+print(t,x.t1)+"\n\t"+print(t,x.t2);
+}
+
+std::string print(const Theory & t){
+    Vs lines;
+    for (auto &&[v,s]:t.sorts) lines.push_back(print(t,s));
+    for (auto &&[v,s]:t.ops) lines.push_back(print(t,s));
+    for (auto &&r:t.rules) lines.push_back(print(t,r));
+
+    return t.name+"\n\n"+join(lines,"\n");
+}
+
+std::ostream & operator << (std::ostream &out, const Expr &e) {
+    if (e.kind == VarNode)
+        out << e.sym<< ":" << e.args.at(0);
     else {
         NodeType firstchild = e.args.size() ? e.args.at(0).kind : VarNode;
         bool sorted_app= (firstchild==SortNode) && (e.kind==AppNode);
@@ -94,6 +166,101 @@ Theory::Theory(const std::string n,
            const std::vector<Rule> r) :
     name(n), sorts(s), ops(o), rules(r) {validate_theory();}
 
+Theory parseTheory(const std::string pth) {
+        peg::parser parser(R"(
+Items <- WORD Item*
+Item <- SortDecl / OpDecl / Rule
+SortDecl <- 'Sort' WORD PHRASE PHRASE '[' Term* ']'
+OpDecl <- 'Op' WORD PHRASE PHRASE Term '[' Term* ']'
+Rule <- 'Rule' WORD PHRASE Term Term
+Term <- Var / WORD '(' Term* ')' / WORD
+Var <- WORD ':' Term
+WORD <- < [a-zA-Z_] [a-zA-Z0-9_]* >
+PHRASE <- < '"' (!'"' .)* '"' >
+%whitespace  <-  [ \t\r\n,]*
+)");
+    assert((bool)parser == true);
+    parser.enable_ast();
+    parser.enable_packrat_parsing();
+    std::ifstream infile(pth);
+    if (infile.fail()){
+        infile.close();
+        throw std::runtime_error("Bad path to theory file: "+pth);
+    }
+    std::string content((std::istreambuf_iterator<char>(infile) ),
+                        (std::istreambuf_iterator<char>()    ) );
+    std::shared_ptr<peg::Ast> ast;
+    if (parser.parse(content.c_str(), ast)) {
+        ast = peg::AstOptimizer(true).optimize(ast);
+
+        std::string name=ast->nodes.at(0)->token;
+        KD kinddict;
+        for (int i=1;i<ast->nodes.size();i++) {
+            std::shared_ptr<peg::Ast> item=ast->nodes.at(i);
+            if (item->name=="SortDecl") kinddict.insert({item->nodes.at(0)->token,SortNode});
+            if(item->name == "OpDecl") kinddict.insert({item->nodes.at(0)->token,AppNode});
+        }
+        std::vector<SortDecl> sorts;
+        std::vector<OpDecl> ops;
+        std::vector<Rule> rules;
+        for (int i=1;i<ast->nodes.size();i++) {
+            std::shared_ptr<peg::Ast> item=ast->nodes.at(i);
+            if (item->name=="SortDecl") sorts.push_back(parseSort(item,kinddict));
+            else if (item -> name == "OpDecl") ops.push_back(parseOp(item,kinddict));
+            else if (item -> name == "Rule") rules.push_back(parseRule(item,kinddict));
+            else {throw std::runtime_error("Bad theory file: "+pth+ " has top-level "+(item->name));}
+        }
+        return {name,sorts,ops,rules};
+    }
+    else {
+        throw std::runtime_error("syntax error in theory file:"+pth);
+    }
+}
+
+Expr parseExpr(std::shared_ptr<peg::Ast> ast, KD kd) {
+    std::string name;
+    Vx args;
+    if (ast->nodes.empty()) name = ast->token;
+    else {
+        for (int i=0;i!=ast->nodes.size();i++) {
+            if (i==0) name = ast->nodes.at(i)->token;
+            else  args.push_back(parseExpr(ast->nodes.at(i), kd));
+        }
+    }
+
+    NodeType nt;
+    if (kd.find(name)==kd.end()) nt = VarNode;
+    else if (kd.at(name) == AppNode) nt = AppNode;
+    else nt = SortNode;
+    Expr out{name,nt,args};
+    return out;
+}
+
+SortDecl parseSort(std::shared_ptr<peg::Ast> ast, KD kd) {
+    Ve args;
+    for (int i=3;i!=ast->nodes.size();i++)
+        args.push_back(parseExpr(ast->nodes.at(i), kd));
+
+    return {ast->nodes.at(0)->token,
+            trim(ast->nodes.at(1)->token),
+            args, trim(ast->nodes.at(2)->token)};
+}
+
+OpDecl parseOp(std::shared_ptr<peg::Ast> ast, KD kd) {
+    Ve args;
+    for (int i=4;i!=ast->nodes.size();i++)
+        args.push_back(parseExpr(ast->nodes.at(i), kd));
+    return {ast->nodes.at(0)->token,
+            trim(ast->nodes.at(1)->token),
+            parseExpr(ast->nodes.at(3),kd),
+            args, trim(ast->nodes.at(2)->token)};
+}
+Rule parseRule(std::shared_ptr<peg::Ast> ast, KD kd) {
+    return {ast->nodes.at(0)->token,
+            trim(ast->nodes.at(1)->token),
+            parseExpr(ast->nodes.at(2),kd),
+            parseExpr(ast->nodes.at(3),kd)};
+}
 
 void Theory::validate_theory(){
     // TBD
@@ -115,7 +282,8 @@ Expr Var(const std::string & sym, Expr srt) {
 }
 
 // Join list of ints with an optional separator
-std::string join(const Vi & v, const std::string & sep) {
+template<typename T>
+std::string join(const std::vector<T> & v, const std::string & sep) {
     std::stringstream ss;
     for(size_t i = 0; i < v.size(); ++i) {
         if(i != 0)
@@ -124,6 +292,9 @@ std::string join(const Vi & v, const std::string & sep) {
     }
     std::string s = ss.str();
     return s;
+}
+std::string trim(const std::string & x) {
+    return x.substr(1,x.length()-2);
 }
 
 // Compute hash of every element in the path
@@ -205,7 +376,6 @@ MatchDict patmatch(const Expr &pat, const Expr &x){
         return {{"",x}}; // error match result
    else{ // Recurse on arguments
     for (int i=0;i!=x.args.size();i++){
-        //std::cout << i << " " << x << " " << x.args.size() << " " << pat << " " << pat.args.size() << std::endl;
         mergedict(res,patmatch(pat.args.at(i),x.args.at(i)));}
     return res;}
 }
@@ -228,8 +398,6 @@ Expr infer(const std::map<std::string,SortDecl>&  sorts,
     if (ops.find(sym)==ops.end())
         throw std::runtime_error("inferring a symbol ("+sym+")not in ops");
 
-    //std::cout << "inferring '" << sym << "' with args:" << std::endl;
-    //for (auto && a:args) std::cout << "\t" << a << std::endl;
     Ve op_pat_args = ops.at(sym).args;
     if (op_pat_args.size()!=args.size()){
         std::stringstream buf;
@@ -241,7 +409,6 @@ Expr infer(const std::map<std::string,SortDecl>&  sorts,
 
     MatchDict match;
     for (int i=0;i!=op_pat_args.size();i++){
-        //std::cout << "inferring arg " << i << std::endl;
         Expr x=args.at(i), pat=op_pat_args.at(i);
         MatchDict newmatch = patmatch(pat,x);
         if (newmatch.find("") != newmatch.end()) {
@@ -258,7 +425,6 @@ Expr infer(const std::map<std::string,SortDecl>&  sorts,
 Expr upgrade(const std::map<std::string,SortDecl>&  sorts,
              const std::map<std::string,OpDecl> & ops,
              const Expr & e) {
-    //std::cout << "Upgrading Expr " << e << std::endl;
     Ve recargs,newargs;
     for (auto && a : e.args)
         recargs.push_back(upgrade(sorts,ops,a));
@@ -267,7 +433,6 @@ Expr upgrade(const std::map<std::string,SortDecl>&  sorts,
     for (auto && a : recargs) newargs.push_back(a);
 
     Expr res{e.sym,e.kind,newargs};
-    //if (e.kind==AppNode) std::cout << "\tUpgraded Expr " << res << std::endl;
     return res;
 }
 
@@ -278,7 +443,6 @@ Expr upgrade(const Theory & t, const Expr & e) {
 SortDecl upgrade(const std::map<std::string,SortDecl>&  sorts,
                  const std::map<std::string,OpDecl> & ops,
                  const SortDecl & x) {
-    //std::cout << "Upgrading SortDecl " << x.sym << std::endl;
     Ve newargs;
     for (auto && a:x.args) newargs.push_back(upgrade(sorts,ops,a));
     return {x.sym, x.pat, newargs, x.desc};
@@ -287,7 +451,6 @@ SortDecl upgrade(const std::map<std::string,SortDecl>&  sorts,
 OpDecl upgrade(const std::map<std::string,SortDecl>&  sorts,
                const std::map<std::string,OpDecl> & ops,
                const OpDecl & x) {
-    //std::cout << "Upgrading OpDecl " << x.sym << std::endl;
     Ve newargs;
     for (auto && a:x.args) newargs.push_back(upgrade(sorts,ops,a));
     return {x.sym, x.pat, upgrade(sorts,ops,x.sort),newargs, x.desc};
@@ -296,7 +459,6 @@ OpDecl upgrade(const std::map<std::string,SortDecl>&  sorts,
 Rule upgrade(const std::map<std::string,SortDecl>&  sorts,
              const std::map<std::string,OpDecl> & ops,
              const Rule & x) {
-    //std::cout << "Upgrading rule " << x.name << std::endl;
     return {x.name,x.desc,upgrade(sorts,ops,x.t1),upgrade(sorts,ops,x.t2)};
 }
 
@@ -324,4 +486,106 @@ int max_arity(const Theory & t) {
         if (v.args.size() > m) m=v.args.size();
     }
     return m;
+}
+
+Vs split(const std::string& s, const std::string & delim)
+{
+    Vs res;
+    auto start = 0U;
+    auto end = s.find(delim);
+    while (end != std::string::npos)
+    {
+      res.push_back(s.substr(start, end - start));
+        start = end + delim.length();
+        end = s.find(delim, start);
+    }
+    res.push_back(s.substr(start, end));
+    return res;
+}
+
+std::string mkParser(const std::string & pat) {
+    std::stringstream ss;
+    Vs raw=split(pat,"{}");
+    for (int i=0;i!=raw.size()-1;i++)
+        ss << "'" << raw.at(i) << "' Term ";
+    ss << "'" << raw.back() << "'\n";
+    return ss.str();
+}
+std::string mkParser(const Theory & t) {
+    std::stringstream ss;
+    ss << "Term <- Var";
+    for (auto && [k,v] : t.ops) ss << " / " << k;
+    ss << "\nSort <- ";
+    int i=0;
+    for (auto && p : t.sorts) {
+        if (i!=0) ss << " / ";
+        ss << p.first;
+        i++;
+    }
+    ss << '\n';
+    for (auto && [k,v] : t.sorts) ss << k << " <-  " << mkParser(v.pat);
+    ss << "\n";
+    for (auto && [k,v] : t.ops) ss << k << " <-  " << mkParser(v.pat);
+
+    ss << "Var <- WORD ':' Sort\nWORD <- < [a-zA-Z] [a-zA-Z0-9]* >\n%whitespace  <-  [ \\t\\r\\n]*";
+    return ss.str();
+}
+
+Vx parse_exprs(const Theory & t, const std::string & pth) {
+    std::ifstream infile(pth);
+    if (infile.fail()){
+        infile.close();
+        throw std::runtime_error("Bad path to file with expressions: "+pth);
+    }
+    Vx res;
+    std::string line;
+    while (std::getline(infile, line))
+        res.push_back(parse_expr(t,line));
+    infile.close();
+    return res;
+}
+
+Expr parse_expr(const Theory & t, const std::string & expr) {
+
+    peg::parser parser(mkParser(t).c_str());
+    parser.enable_ast();
+    assert((bool)parser == true);
+
+    std::shared_ptr<peg::Ast> ast;
+    if (parser.parse(expr.c_str(), ast)) {
+        return ast_to_expr(t, ast);
+    }
+    else {
+        throw std::runtime_error("syntax error: " + expr);
+    }
+}
+
+Expr ast_to_expr(const Theory & t, const std::shared_ptr<peg::Ast> & ast) {
+    Expr res{"x",AppNode,{}};
+    std::string kind=ast->name;
+
+    if ((kind != "Term" && kind != "Sort") || ast->nodes.size() != 1)
+        throw std::runtime_error("Bad AST. Name = "+ast->name);
+
+    std::shared_ptr<peg::Ast> child=(ast->nodes).at(0);
+    std::string name=child->name;
+
+    if (name=="Var") {
+        Vx srt{ast_to_expr(t,child->nodes.at(1))};
+        return Expr(child->nodes.at(0)->token, VarNode, srt);
+    }
+
+    Vx children;
+    for (auto node : child->nodes) {
+      children.push_back(ast_to_expr(t,node));
+    }
+
+    if (kind=="Term") {
+        return Expr(name, AppNode, children);
+    } else if (kind=="Sort") {
+        return Expr(name, SortNode, children);
+    }
+     else {
+            throw std::runtime_error("Unknown symbol");
+     }
 }

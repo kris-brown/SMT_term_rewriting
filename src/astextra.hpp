@@ -7,12 +7,13 @@
 namespace CVC = CVC4::api;
 typedef std::vector<CVC::Term> Vt;
 
+typedef std::vector<void (*)()> Vf;
 typedef std::vector<int> Vi;
 typedef std::vector<Vi> Vvi;
 typedef std::vector<Vvi> Vvvi;
 typedef std::map<int, CVC::Term> Tmap;
-typedef std::tuple<CVC::Sort,CVC::Sort,CVC::Sort,CVC::Sort,CVC::Datatype,CVC::Datatype,CVC::Datatype,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,Vt,Vi,std::map<Vi,CVC::Term>,Tmap> CDTuple;
-typedef std::tuple<CVC::Sort, CVC::Sort, CVC::Sort, CVC::Sort, CVC::Datatype, CVC::Datatype,CVC::Datatype,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,Vt,Vi,Vt,Vt> STuple;
+typedef std::tuple<CVC::Sort,CVC::Sort,CVC::Sort,CVC::Sort,CVC::Datatype,CVC::Datatype,CVC::Datatype,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,Vt,Vi,std::map<Vi,CVC::Term>,Tmap> CDTuple; // Only for output of create_datatype()
+typedef std::tuple<CVC::Sort, CVC::Sort, CVC::Sort, CVC::Sort, CVC::Datatype, CVC::Datatype,CVC::Datatype,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,Vt,Vi,Vt,Vt> STuple; // Only for output of setup()
 
 
 // Cartesian product of vector of vectors, taken from: https://stackoverflow.com/a/5279601
@@ -49,21 +50,6 @@ std::tuple<Vt,Vt,CVC::Term> arity_funcs(
     const CVC::Term & noneX,
     const CVC::Term & nodeX,
     const Vt & as);
-
-// getAt and replaceAt functions, parameterized by Path argument
-std::tuple<CVC::Term,CVC::Term> path_funcs(
-    CVC::Solver & slv,
-    const CVC::Sort &  astSort,
-    const CVC::Sort &  Int,
-    const CVC::Term & xTerm,
-    const CVC::Term & yTerm,
-    const CVC::Term & pTerm,
-    const CVC::Term & errterm,
-    const CVC::Term & Empty,
-    const Vt & as,
-    const Vt & repls,
-    const Vvvi & paths,
-    const std::map<Vi,CVC::Term> & pathcon);
 
 
 // For each rule, a pattern predicate to determine if rule is valid and a function to perform the rewrite, along with a top-level rewrite function which combines the other two.
