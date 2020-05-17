@@ -1,0 +1,31 @@
+cat
+
+Sort Ob "Ob" "Objects in a category" []
+
+Sort Hom "({}⇒{})" "Hom-set of morphisms" [A:Ob, B:Ob]
+
+Op id "id({})" "Identity morphism" Hom(A:Ob, A:Ob) [A:Ob]
+
+Op cmp "({} ⋅ {})" "Composition of morphisms" Hom(A:Ob, C:Ob) [f:Hom(A:Ob,B:Ob), g:Hom(B:Ob, C:Ob)]
+
+Rule idl "Left identity"
+      f:Hom(A:Ob,B:Ob)
+      cmp(id(A:Ob), f:Hom(A:Ob,B:Ob))
+
+Rule idr "Right identity"
+      f:Hom(A:Ob,B:Ob)
+      cmp(f:Hom(A:Ob,B:Ob), id(B:Ob))
+
+Rule asc "Associativity"
+      cmp(
+          f:Hom(A:Ob,B:Ob),
+          cmp(g:Hom(B:Ob, C:Ob),
+              h:Hom(C:Ob, D:Ob)
+             )
+         )
+      cmp(
+            cmp(f:Hom(A:Ob,B:Ob),
+                g:Hom(B:Ob, C:Ob)
+               ),
+            h:Hom(C:Ob, D:Ob)
+         )

@@ -5,14 +5,18 @@
 #include "../src/cvc4extra.hpp"
 #include "../src/astextra.hpp"
 
-TEST_CASE("cat") {
+TEST_CASE("create_datatypes") {
     for (auto && t: alltheories()) {
         CHECK_NOTHROW(upgradeT(t));
         CVC::Solver slv;
         slv.setOption("produce-models", "true");
-        setup(slv,t,2);
+        create_datatypes(slv,t,2);
         writeModel(slv,"build/"+t.name+".dat");
     }
+}
 
-
+TEST_CASE("parse") {
+    for (auto && t: alltheories()) {
+        CHECK_NOTHROW(parseTheory("data/"+t.name+".dat"));
+    }
 }

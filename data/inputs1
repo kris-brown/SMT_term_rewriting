@@ -1,0 +1,5 @@
+cat
+(f:(A:Ob⇒B:Ob) ⋅ id(B:Ob))
+f:(A:Ob⇒B:Ob)
+1
+3

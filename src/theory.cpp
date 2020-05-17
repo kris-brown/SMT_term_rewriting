@@ -3,6 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <src/theory.hpp>
+#include <regex>
 
  // Safe constructor
 Expr::Expr(const std::string s,const NodeType k,const std::vector<Expr> a) :
@@ -338,7 +339,7 @@ Expr subexpr(const Expr & e, const std::vector<int> & pth){
 // Add all strings in the expr, optionally filter by node type
 void addx(std::set<std::string> & syms,const Expr & x,const int & nodet){
     if (nodet < 0 || x.kind==nodet) syms.insert(x.sym);
-    for (auto && e: x.args) addx(syms,e);
+    for (auto && e: x.args) addx(syms,e, nodet);
 }
 
 std::map<std::string,int> symcode(const Theory & t) {
@@ -503,11 +504,23 @@ Vs split(const std::string& s, const std::string & delim)
     return res;
 }
 
+bool isSpace(unsigned char c) {
+	return (c == ' ' || c == '\n' || c == '\r' ||
+		   c == '\t' || c == '\v' || c == '\f');
+}
+
+void del_whitespace(std::string s){
+    s.erase(std::remove_if(s.begin(), s.end(), isSpace), s.end());
+}
+
 std::string mkParser(const std::string & pat) {
     std::stringstream ss;
     Vs raw=split(pat,"{}");
-    for (int i=0;i!=raw.size()-1;i++)
-        ss << "'" << raw.at(i) << "' Term ";
+    for (int i=0;i!=raw.size()-1;i++){
+        std::string s=raw.at(i);
+        std::regex r("\\s+");
+        s = std::regex_replace(s, r, "");
+        ss << "'" << s << "' Term ";}
     ss << "'" << raw.back() << "'\n";
     return ss.str();
 }
@@ -526,7 +539,6 @@ std::string mkParser(const Theory & t) {
     for (auto && [k,v] : t.sorts) ss << k << " <-  " << mkParser(v.pat);
     ss << "\n";
     for (auto && [k,v] : t.ops) ss << k << " <-  " << mkParser(v.pat);
-
     ss << "Var <- WORD ':' Sort\nWORD <- < [a-zA-Z] [a-zA-Z0-9]* >\n%whitespace  <-  [ \\t\\r\\n]*";
     return ss.str();
 }
@@ -589,3 +601,17 @@ Expr ast_to_expr(const Theory & t, const std::shared_ptr<peg::Ast> & ast) {
             throw std::runtime_error("Unknown symbol");
      }
 }
+
+std::map<std::string,int> freevar(Expr x, Expr y) {
+    std::set<std::string> symx,symy;
+    addx(symx,x,VarNode); addx(symy,y,VarNode);
+
+    std::map<std::string,int> res;
+    int i = 1;
+    for (auto && e : symx){
+    if (symy.find(e)==symy.end())
+        res[e]=i++;}
+    return res;
+}
+
+

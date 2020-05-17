@@ -1,0 +1,9 @@
+preorder
+
+Sort Ob "Ob" "Some set" []
+Sort L "({}≤{})" "A relation from A->B" [A:Ob, B:Ob]
+
+Op R "({}ᵣ)" "Reflexivity" L(A:Ob,A:Ob) [A:Ob]
+Op T "({}⪯{})" "Transitivity" L(A:Ob,C:Ob) [p:L(A:Ob,B:Ob),q:L(B:Ob,C:Ob)]
+
+Rule singleton "The sort A->B is a singleton set" p:L(A:Ob,B:Ob) q:L(A:Ob,B:Ob)

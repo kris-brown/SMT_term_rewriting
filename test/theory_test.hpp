@@ -43,10 +43,13 @@ TEST_CASE("expr parser and printer") {
     Vx xs = parse_exprs(t,"data/arrayterms.dat");
     for (auto x: xs){
         CHECK(parse_expr(t, print(t,x))==x);}
+
+    Theory h = cat();
+    CHECK_NOTHROW(parse_expr(h,"(f:(A:Ob⇒B:Ob) ⋅g:(B:Ob ⇒ C:Ob))"));
 }
 
 TEST_CASE("parse theory") {
-    Theory t1 = parseTheory("data/category.dat");
+    Theory t1 = parseTheory("data/cat.dat");
     Theory t2 = cat();
     CHECK(print(t1)==print(t2));
     CHECK(t1.sorts==t2.sorts);
@@ -56,3 +59,11 @@ TEST_CASE("parse theory") {
 
 }
 
+TEST_CASE("mk_freevar") {
+    Expr s=Sort("X");
+    Expr x=Var("x",s),y=Var("y",s),z=Var("z",s);
+    Expr xy=App("+",{x,y}),xyz=App("f",{z,y,x});
+    CHECK(freevar(xy,xyz).empty());
+    std::map<std::string,int>m{{"z",1}};
+    CHECK(freevar(xyz,xy) == m);
+}

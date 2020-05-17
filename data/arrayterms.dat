@@ -1,0 +1,2 @@
+read(write(A:Arr,S(0),p:N),S(0))
+ite((0 ≡ S(0)), o:Ob, read(write(A:Arr,S(0),p:N), S(0)))

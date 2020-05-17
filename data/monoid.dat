@@ -1,0 +1,10 @@
+monoid
+
+Sort Ob "Ob" "Some set" []
+
+Op M "({}⋅{})" "Multiplication" Ob [x:Ob, y:Ob]
+Op e "e" "Identity element" Ob []
+
+Rule idl "Left identity" x:Ob M(e,x:Ob)
+Rule idr "Right identity" x:Ob M(x:Ob,e)
+Rule asc "Associativity" M(x:Ob,M(y:Ob,z:Ob)) M(M(x:Ob,y:Ob),z:Ob)

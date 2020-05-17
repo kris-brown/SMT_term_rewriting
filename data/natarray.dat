@@ -1,0 +1,28 @@
+natarray
+
+Sort Ob "Ob" "Some datatype that can be stored in an array" []
+Sort N "Nat" "A natural number: 0, 1, 2, ..." []
+Sort B "Bool" "Either true or false" []
+Sort Arr "Arr" "An array that can be indexed by natural numbers." []
+
+Op Z "0" "Zero" N []
+Op T "⊤" "True" B []
+Op F "⊥" "False" B []
+Op S "S({})" "Successor, e.g. S(0)=1" N [i:N]
+Op E "({}≡{})" "Equality of numbers" B [i:N, j:N]
+Op ite "ite({},{},{})" "If-then-else" Ob [b:B, o:Ob, p:Ob]
+Op read "read({},{})" "Read array A at position i" Ob [A:Arr, i:N]
+Op write "write({},{},{})" "Write object o to position i" Arr [A:Arr, i:N, o:Ob]
+
+
+Rule row "Read-over-write: if indices not equal, look at previous write"
+    read(write(A:Arr, i:N, o:Ob), j:N)
+    ite(E(i:N, j:N), o:Ob, read(A:Arr,j:N))
+Rule eq1 "Recursively peel of successor"
+    E(i:N,j:N)
+    E(S(i:N),S(j:N))
+Rule eq2 "Base case, zero vs zero" T E(Z, Z)
+Rule eq3 "Base case, zero vs nonzero" F E(Z, S(Z))
+Rule eq4 "Base case, nonzer vs zero" F E(S(Z), Z)
+Rule if1 "ITE true" o:Ob ite(T,o:Ob,p:Ob)
+Rule if2 "ITE false" p:Ob ite(F,o:Ob, p:Ob)

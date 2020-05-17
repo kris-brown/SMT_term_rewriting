@@ -3,6 +3,6 @@
 
 *.o
 
-*.dat
-
-build/*
+build/**/*.dat
+build/ast
+build/runtest

@@ -4,6 +4,7 @@
 // Copy other tests into this file
 #include "theory_test.hpp"
 #include "theories_test.hpp"
+#include "astextra_basic_test.hpp"
 #include "astextra_test.hpp"
 #include "cvc4extra_test.hpp"
 

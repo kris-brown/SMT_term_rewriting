@@ -101,6 +101,8 @@ template<typename T>
 std::string join(const std::vector<T> & v, const std::string & sep="");
 Vs split(const std::string& s, const std::string & delim);
 std::string trim(const std::string & x);
+bool isSpace(unsigned char c);
+void del_whitespace(std::string s);
 
 // Rendering
 std::ostream & operator << (std::ostream &out, const Expr &e);
@@ -151,5 +153,8 @@ std::string mkParser(const Theory & t);
 Vx parse_exprs(const Theory & t, const std::string & pth);
 Expr parse_expr(const Theory & t, const std::string & expr); // inverse to print
 Expr ast_to_expr(const Theory & t, const std::shared_ptr<peg::Ast> & ast);
+
+// Misc
+std::map<std::string,int> freevar(Expr x, Expr y);
 
 #endif

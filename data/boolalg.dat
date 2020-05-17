@@ -1,0 +1,24 @@
+boolalg
+
+Sort Bool "Bool" "Underlying set" []
+
+Op T "⊤" "" Bool []
+
+Op F "⊥" "" Bool []
+
+Op N "(¬{})" "" Bool [b:Bool]
+
+Op A "({}∧{})" "" Bool [x:Bool y:Bool]
+
+Op O "({}∨{})" "" Bool [x:Bool y:Bool]
+
+Rule and_identity  "" x:Bool A(x:Bool, T)
+Rule or_identity  "" x:Bool O(x:Bool, F)
+Rule and_sym  "" A(x:Bool, y:Bool) A(y:Bool, x:Bool)
+Rule or_sym  "" O(x:Bool, y:Bool) O(y:Bool, x:Bool)
+Rule and_asc  "" A(x:Bool, A(y:Bool,z:Bool)) A(A(x:Bool, y:Bool),z:Bool)
+Rule or_asc  "" O(x:Bool, O(y:Bool,z:Bool)) O(O(x:Bool, y:Bool),z:Bool)
+Rule and_dist  "" A(x:Bool, O(y:Bool, z:Bool)) O(A(x:Bool, y:Bool), A(x:Bool, z:Bool))
+Rule or_dist  "" O(x:Bool, A(y:Bool, z:Bool)) A(O(x:Bool, y:Bool), O(x:Bool, z:Bool))
+Rule top_def  "" T O(x:Bool, N(x:Bool))
+Rule bot_def  "" F A(x:Bool, N(x:Bool))

@@ -2,192 +2,142 @@
 #define ASTEXTRA
 #include<vector>
 #include <cvc4/api/cvc4cpp.h>
-#include "theory.hpp"
+#include "astextra_basic.hpp"
 
-namespace CVC = CVC4::api;
-typedef std::vector<CVC::Term> Vt;
-
-typedef std::vector<void (*)()> Vf;
-typedef std::vector<int> Vi;
-typedef std::vector<Vi> Vvi;
-typedef std::vector<Vvi> Vvvi;
 typedef std::map<int, CVC::Term> Tmap;
-typedef std::tuple<CVC::Sort,CVC::Sort,CVC::Sort,CVC::Sort,CVC::Datatype,CVC::Datatype,CVC::Datatype,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,Vt,Vi,std::map<Vi,CVC::Term>,Tmap> CDTuple; // Only for output of create_datatype()
-typedef std::tuple<CVC::Sort, CVC::Sort, CVC::Sort, CVC::Sort, CVC::Datatype, CVC::Datatype,CVC::Datatype,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,CVC::Term,Vt,Vi,Vt,Vt> STuple; // Only for output of setup()
+typedef std::vector<Rule> Vr;
 
 
-// Cartesian product of vector of vectors, taken from: https://stackoverflow.com/a/5279601
-void cart_product(
-    Vvi& rvvi, // final result
-    Vi&  rvi, // current result
-    Vvi::const_iterator me, // current input
-    Vvi::const_iterator end);// final input
 
-// Path vector generation: we want (arity ^ depth) number of paths
-Vvi paths_n(const int&  depth, const int& arity);
-
-// All paths of length 1, 2, ... depth
-Vvvi all_paths(const int&  depth, const int& arity);
-
-
-// Create AST, Rule, Path datatypes, return lots of associated sorts/constructors/example terms
-CDTuple create_datatypes(CVC::Solver & slv,
-                      const Theory & t,
-                      const int & depth);
-
-// safe access to AST selectors, shorthand constructors for terms of any arity, replacing top-level arguments of a term.
-std::tuple<Vt,Vt,CVC::Term> arity_funcs(
-    CVC::Solver & slv,
-    const int & arity,
-    const CVC::Sort & Int,
-    const CVC::Sort & astSort,
-    const CVC::Datatype & astDT,
-    const CVC::Term & astCon,
-    const CVC::Term & nInt,
-    const CVC::Term & xTerm,
-    const CVC::Term & yTerm,
-    const CVC::Term & noneterm,
-    const CVC::Term & noneX,
-    const CVC::Term & nodeX,
-    const Vt & as);
-
-
-// For each rule, a pattern predicate to determine if rule is valid and a function to perform the rewrite, along with a top-level rewrite function which combines the other two.
-std::tuple<Tmap, Tmap, CVC::Term> rule_funcs(
+/**
+ * Create AST, Rule, Path sorts
+ *
+ * @param solver
+ * @param t - Theory dictates the arity of AST and the # of rules
+ * @param depth - Arity + depth determines the possible paths
+ * @return - the three sorts
+ */
+std::tuple<CVC::Sort,CVC::Sort,CVC::Sort> create_datatypes(
     CVC::Solver & slv,
     const Theory & t,
-    const CVC::Sort &  astSort,
-    const CVC::Sort &  Int,
-    const CVC::Term &  xTerm,
-    const CVC::Term &  rTerm,
-    const CVC::Term &  errterm,
-    const CVC::Term &  sInt,
-    const CVC::Term &  node,
-    const std::map<int,CVC::Term> & rulecon,
-    const Vt &  as,
-    const Vt &  asts,
-    const Vi & rules);
+    const int & depth);
 
-std::tuple<CVC::Term,Vt> rewrite_funcs(
-    CVC::Solver & slv,
-    const CVC::Sort & astSort,
-    const CVC::Sort & ruleSort,
-    const CVC::Sort & pathSort,
-    const CVC::Term & xTerm,
-    const CVC::Term & rTerm,
-    const CVC::Term & pTerm,
-    const CVC::Term & sInt,
-    const CVC::Term & astX,
-    const CVC::Term & errterm,
-    const CVC::Term & replaceAt,
-    const CVC::Term & rewriteTop,
-    const CVC::Term & getAt);
-
-// Call create_datatypes, arity_funcs, path_funcs, rewrite_funs
-STuple setup(CVC::Solver & slv,
-             const Theory & t,
-             const int & depth,
-             const bool incl_rewrite=true,
-             const bool incl_rule=true,
-             const bool incl_path=true,
-             const bool incl_arity=true);
-
-// e.g. ast3 : (INT, AST, AST, AST) -> AST
-// = (LAMBDA(n:INT, x0:AST, x1:AST, x2:AST): ast(n, x0, x1, x2, None));
-CVC::Term ast_fun(CVC::Solver & slv,
-                  const Vt & xs,
-                  const CVC::Term & nInt,
-                  const CVC::Sort & astSort,
-                  const CVC::Datatype & astDT,
-                  const CVC::Term & noneterm,
-                  const int & i);
-
-// Safe access to the selectors of the AST constructor
-// e.g.    A2 : T -> T   = LAMBDA (x:T): IF x = None THEN None ELSE a2(x) ENDIF;
-// Also: Node : T -> INT = LAMBDA (x:T): IF x = None THEN 0    ELSE node(x) ENDIF;
-CVC::Term a_fun(CVC::Solver & slv,
-                const CVC::Term & x,
-                const CVC::Sort & astSort,
-                const CVC::Sort & intSort,
-                const CVC::Datatype & astDT,
-                const CVC::Term & noneterm,
-                const CVC::Term & noneX,
-                const int & i);
-
-// Replace a top-level argument of a term
-// replace2 : (T,T) -> T = LAMBDA (x,y: T):ast(node(x),a0(x),a1(x),y,a3(x));
-CVC::Term repl_fun(CVC::Solver & slv,
-                const CVC::Term & x,
-                const CVC::Term & y,
-                const CVC::Sort & astSort,
-                const CVC::Term & noneterm,
-                const CVC::Term & nodeX,
-                const CVC::Term & astCon,
-                const CVC::Term & noneX,
-                const Vt & as,
-                const int & arity,
-                const int & i);
-
-/* Replace a specific subnode of a term
-replaceP321 : (T, T) -> T = LAMBDA(x,y:T): replace3(x, replace2(a3(x), replace1(a2(a3(x)), y)));
-*/
-CVC::Term replP_fun(CVC::Solver & slv,
-                const CVC::Term & x,
-                const CVC::Term & y,
-                const CVC::Sort & astSort,
-                const Vt & as,
-                const Vt & reps,
-                const Vi & p);
-
-// Apply a1(a3(a4(...(x)))) specified by vector pth
-CVC::Term pathterm(const CVC::Solver & slv,
-                   const CVC::Term & root,
-                   const Vt & selectors,
-                   const Vi & pth);
-
-// Create a predicate on terms which is true if it pattern-matches the first Expr of a rule
+/**
+ * Evaluate whether a term satisfies the input pattern of a rewrite rule.
+ *
+ * @param slv - solver
+ * @param thry - A theory with rewrite rulse
+ * @param x - A term we are testing
+ * @param r - Index to which rule we are talking about
+ * @param dir - Forward or reverse direction?
+ * @return A CVC term which evalutes to a bool
+ */
 CVC::Term pat_fun(const CVC::Solver & slv,
-                  const CVC::Term & x,
-                  const CVC::Term & node,
-                  const int & r,
-                  const Vt & selectors,
                   const Theory & thry,
-                  const std::map<std::string,int> & symcode);
+                  const CVC::Term & x,
+                  const int & r,
+                  const char & dir);
 
-// Construct a term, making reference to subexpressions of some existing term x when possible
-
-CVC::Term construct(const CVC::Solver & slv,
-                    const Expr & tar,
-                    const Vi & currpth,
-                    const std::map<size_t,Vi> & srchsh,
-                    const std::map<Vi,size_t> & tarhsh,
-                    const CVC::Term & x,
-                    const CVC::Term & step,
-                    const Vt & asts,
-                    const Vt & selectors,
-                    const std::map<std::string,int> freevar,
-                    const std::map<std::string,int> & symcode);
-
-// Enumeration of variables in x that do not appear in y
-
-std::map<std::string,int> mk_freevar(Expr x, Expr y) ;
-
-// Concretely apply a rewrite rule to construct a new term from an old one
+/**
+ * Construct the resulting term of a rewrite in the context of a term which matches the input pattern.
+ *
+ * @param slv - solver
+ * @param thry - A theory with rewrite rulse
+ * @param x - A term which matches the input pattern
+ * @param step - which rewrite step we are on (needed to make variables introduced distinct)
+ * @param ruleind - Index to which rule we are talking about
+ * @param dir - Forward or reverse direction?
+ * @return A CVC term which matches the result pattern
+ */
 CVC::Term rterm_fun(const CVC::Solver & slv,
-                    const CVC::Term & x,
-                    const CVC::Term & s,
-                    const CVC::Sort & astSort,
-                    const int & r,
                     const Theory & thry,
-                    const Vt & asts,
-                    const Vt & selectors,
-                    std::map<std::string,int> & symcode);
+                    const CVC::Term & x,
+                    const int & step,
+                    const int & ruleind,
+                    const char & dir);
 
-// A function which applies i rewrites in sequence
-CVC::Term rw_fun(const CVC::Solver & slv,
-                 const int & imax,
-                 const CVC::Sort & astSort,
-                 const CVC::Term & rewrite,
-                 const Vt & rs,
-                 const Vt & ps);
+/**
+ * Access a subterm via a path CVC term.
+ *
+ * @param solver
+ * @param xTerm - term from which we wish to look at a subterm
+ * @param pTerm - CVC4 term which refers to some path
+ * @param paths - All possible paths
+ * @return a CVC4 subterm of xTerm
+ */
+
+CVC::Term getAt(const CVC::Solver & slv,
+                const CVC::Term & xTerm,
+                const CVC::Term & pTerm,
+                const Vvvi & paths);
+/**
+ * Access a subterm via a path CVC term.
+ *
+ * @param solver
+ * @param xTerm - term from which we wish to substitute in
+ * @param yTerm - term to insert into xTerm
+ * @param pTerm - CVC4 term which refers to some path to the location of insertino
+ * @param paths - All possible paths
+ * @return Result of subtitution.
+ */
+
+CVC::Term replaceAt(const CVC::Solver & slv,
+                    const CVC::Term & xTerm,
+                    const CVC::Term & yTerm,
+                    const CVC::Term & pTerm,
+                    const Vvvi & paths);
+
+/**
+ * Apply rewrite rule to a top-level term
+ *
+ * @param solver
+ * @param x - Term we are rewriting
+ * @param rTerm - a CVC term of sort Rule
+ * @param t - Theory of which x is a term
+ * @param step - Which rewrite step we are on (needed to make variables introduced distinct)
+ * @param returns - Either Error or the substitution result
+*/
+CVC::Term rewriteTop(const CVC::Solver & slv,
+                    const CVC::Term & x,
+                    const CVC::Term & rTerm,
+                    const Theory & t,
+                    const int & step);
+/**
+ * ASSERT that t1 can be rewritten into t2 in (exactly) some number of rewrites.
+ *
+ * @param solver
+ * @param x - incoming term for this rewrite step
+ * @param r - variable for the rule applied
+ * @param p - variable for the subterm rule is applied to
+ * @param steps - Which rewrite step we are on
+ */
+
+CVC::Term rewrite(const CVC::Solver & slv,
+                  const Theory & t,
+                  const CVC::Term & x,
+                  const CVC::Term & r,
+                  const CVC::Term & p,
+                  const int & step,
+                  const int & depth
+                  ) ;
+/**
+ * ASSERT that t1 can be rewritten into t2 in (exactly) some number of rewrites.
+ *
+ * @param solver
+ * @param astSort - AST datatype from create_datatypes()
+ * @param t - Theory which t1,t2 are terms of
+ * @param t1 - starting point
+ * @param t2 - destination
+ * @param steps - number of rewrites expected
+ */
+
+CVC::Term assert_rewrite(const CVC::Solver & slv,
+             const CVC::Sort & astSort,
+             const CVC::Sort & pathSort,
+             const CVC::Sort & ruleSort,
+             const Theory & t,
+             const CVC::Term & t1,
+             const CVC::Term & t2,
+             const int & steps
+             );
 #endif

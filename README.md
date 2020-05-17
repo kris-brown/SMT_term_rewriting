@@ -9,9 +9,17 @@ This is a very expressive language, but to be useful we must be able to identify
 
 ## Source code structure
 - `ast.hpp`
-    - The main program which takes a user-specified theory and creates a CVC4 model.
+    - The main program which has inputs:
+        - A user-specified theory
+        - A starting term in that theory
+        - A goal term in that theory
+        - How many rewrite steps are needed
+        - Max depth in the abstract syntax tree we want to be able to apply rewrites.
+    - And returns whether the rewrite can be performed, with a CVC4 model with the steps written to a log file.
 - `astextra.hpp`
-    - The majority of the code, aimed at taking a GAT and generating relevant CVC4 terms/functions.
+    - High-level functions for taking a GAT and generating relevant CVC4 terms/functions.
+- `astextra_basic.hpp`
+    - Supporting functions for `astextra.hpp`.
 - `cvc4extra.hpp`
     - A few utility functions that are purely related to CVC4.
 - `theory.hpp`
@@ -22,8 +30,7 @@ This is a very expressive language, but to be useful we must be able to identify
 ## TO-DO
  - Add more tests to make sure the generated CVC4 functions behave as expected
  - Connect to [SMT-switch](https://github.com/makaimann/smt-switch) and [cosa2](https://github.com/upscale-project/cosa2) to do model checking.
- - Handle the introduction free variables via rewrite rules. This has been done already in the [Julia version of this project](https://kris-brown.github.io/AlgebraicTypeTheory.jl/dev/), which generates a large CVC4 native input file string rather than using an API.
- - Cleaning things up and more documentation.
+ - Cleaning things up / more documentation.
 
 ## Usage
 
@@ -34,11 +41,11 @@ Sort N "Nat" "A natural number: 0, 1, 2, ..." []
 Sort B "Bool" "Either true or false" []
 Sort Arr "Arr" "An array that can be indexed by natural numbers." []
 
-Op S "S({})" "Successor, e.g. S(0)=1" I [i:N]
+Op S "S({})" "Successor, e.g. S(0)=1" N [i:N]
 Op E "({}≡{})" "Equality of numbers" B [i:N, j:N]
 Op ite "ite({},{},{})" "If-then-else" Ob [b:B, o:Ob, p:Ob]
 Op read "read({},{})" "Read array A at position i" Ob [A:Arr, i:N]
-Op write "write({},{},{}) "Write object o to position i" Arr [A:Arr, i:N, o:Ob]
+Op write "write({},{},{})" "Write object o to position i" Arr [A:Arr, i:N, o:Ob]
 
 Rule row "Read-over-write: if indices not equal, look at previous write"
     read(write(A:Arr, i:N, o:Ob), j:N)
@@ -48,7 +55,7 @@ Rule eq1 "Recursively peel of successor"
     E(S(i:N),S(j:N))
 ```
 
-As an example with sorts that depend on values, consider the theory of categories:
+As an example with sorts that depend on values, consider this snippet of the theory of categories:
 ```
 Sort Ob "Ob" "Objects in a category" []
 Sort Hom "({}⇒{})" "Hom-set of morphisms" [A:Ob, B:Ob]
