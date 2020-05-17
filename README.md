@@ -26,14 +26,14 @@ This is a very expressive language, but to be useful we must be able to identify
  - Connect to [SMT-switch](https://github.com/makaimann/smt-switch) and [cosa2](https://github.com/upscale-project/cosa2) to do model checking.
  - Cleaning things up / more documentation.
 
-## Input structure
+## Usage
 
 To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). The executable can be called with a file, e.g. `build/ast < data/inputs1`, or with no arguments to be prompted for the required inputs, which are:
-    1. A user-specified theory (by name or path)
-    2. A starting term in that theory
-    3. A goal term in that theory
-    4. How many rewrite steps are needed
-    5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
+    - 1. A user-specified theory (by name or path)
+    - 2. A starting term in that theory
+    - 3. A goal term in that theory
+    - 4. How many rewrite steps are needed
+    - 5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
 
 GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder (to make these accessible, an additional line must be added to the `alltheories` function in `src/theories/theories.hpp`). However, it's also possible to point to a file specifying a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is an snippet of the theory of arrays, with which we can read and write objects:
 ```
