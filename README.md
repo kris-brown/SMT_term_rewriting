@@ -9,13 +9,7 @@ This is a very expressive language, but to be useful we must be able to identify
 
 ## Source code structure
 - `ast.hpp`
-    - The main program which has inputs:
-        - A user-specified theory
-        - A starting term in that theory
-        - A goal term in that theory
-        - How many rewrite steps are needed
-        - Max depth in the abstract syntax tree we want to be able to apply rewrites.
-    - And returns whether the rewrite can be performed, with a CVC4 model with the steps written to a log file.
+    - Returns whether the rewrite can be performed, with a CVC4 model with the steps written to a log file.
 - `astextra.hpp`
     - High-level functions for taking a GAT and generating relevant CVC4 terms/functions.
 - `astextra_basic.hpp`
@@ -32,9 +26,16 @@ This is a very expressive language, but to be useful we must be able to identify
  - Connect to [SMT-switch](https://github.com/makaimann/smt-switch) and [cosa2](https://github.com/upscale-project/cosa2) to do model checking.
  - Cleaning things up / more documentation.
 
-## Usage
+## Input structure
 
-GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder. To make these accessible, an additional line must be added to the `alltheories` function in `src/theories/theories.hpp`. However, at runtime it's also possible to point to a file with a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder. This is an snippet of the theory of arrays, to which we can read and write objects:
+To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). The executable can be called with a file, e.g. `build/ast < data/inputs1`, or with no arguments to be prompted for the required inputs, which are:
+    1. A user-specified theory (by name or path)
+    2. A starting term in that theory
+    3. A goal term in that theory
+    4. How many rewrite steps are needed
+    5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
+
+GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder (to make these accessible, an additional line must be added to the `alltheories` function in `src/theories/theories.hpp`). However, it's also possible to point to a file specifying a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is an snippet of the theory of arrays, with which we can read and write objects:
 ```
 Sort Ob "Ob" "Some datatype that can be stored in an array" []
 Sort N "Nat" "A natural number: 0, 1, 2, ..." []
@@ -64,7 +65,4 @@ Op id "id({})" "Identity morphism" Hom(A:Ob, A:Ob) [A:Ob]
 Op cmp "({} ⋅ {})" "Composition of morphisms" Hom(A:Ob, C:Ob) [f:Hom(A:Ob,B:Ob), g:Hom(B:Ob, C:Ob)]
 ```
 
-The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important because the main program requires a path to file with pairs of expressions to be tested for equality, for example `data/arrayterms.dat`.
-
-To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). Run the executable with the name of the theory (or a path to a theory file) as a command line argument, e.g. `./build/ast natarray data/natarray1.dat`, where the second argument points to the expressions tested for equality (optionally add a integer argument to specify path depth).
-
+The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 3 and 4, for example `data/arrayterms.dat` or `data/inputs1`.
