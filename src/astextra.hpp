@@ -36,7 +36,7 @@ CVC::Term pat_fun(const CVC::Solver & slv,
                   const Theory & thry,
                   const CVC::Term & x,
                   const int & r,
-                  const char & dir);
+                  const std::string & dir);
 
 /**
  * Construct the resulting term of a rewrite in the context of a term which matches the input pattern.
@@ -54,7 +54,7 @@ CVC::Term rterm_fun(const CVC::Solver & slv,
                     const CVC::Term & x,
                     const int & step,
                     const int & ruleind,
-                    const char & dir);
+                    const std::string & dir);
 
 /**
  * Access a subterm via a path CVC term.

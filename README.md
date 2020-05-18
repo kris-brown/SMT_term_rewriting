@@ -29,11 +29,11 @@ This is a very expressive language, but to be useful we must be able to identify
 ## Usage
 
 To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). The executable can be called with a file, e.g. `build/ast < data/inputs1`, or with no arguments to be prompted for the required inputs, which are:
-- 1. A user-specified theory (by name or path)
-- 2. A starting term in that theory
-- 3. A goal term in that theory
-- 4. How many rewrite steps are needed
-- 5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
+1. A user-specified theory (by name or path)
+2. A starting term in that theory
+3. A goal term in that theory
+4. How many rewrite steps are needed
+5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
 
 GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder (to make these accessible, an additional line must be added to the `alltheories` function in `src/theories/theories.hpp`). However, it's also possible to point to a file specifying a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is an snippet of the theory of arrays, with which we can read and write objects:
 ```
@@ -56,13 +56,24 @@ Rule eq1 "Recursively peel of successor"
     E(S(i:N),S(j:N))
 ```
 
-As an example with sorts that depend on values, consider this snippet of the theory of categories:
-```
-Sort Ob "Ob" "Objects in a category" []
-Sort Hom "({}⇒{})" "Hom-set of morphisms" [A:Ob, B:Ob]
+The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 3 and 4, see for example `data/arrayterms.dat` or `data/inputs1`.
 
-Op id "id({})" "Identity morphism" Hom(A:Ob, A:Ob) [A:Ob]
-Op cmp "({} ⋅ {})" "Composition of morphisms" Hom(A:Ob, C:Ob) [f:Hom(A:Ob,B:Ob), g:Hom(B:Ob, C:Ob)]
+## Example
+
+Consider the example in `data/inputs1` which searches for a rewrite path of length 2:
+```
+data/cat.dat
+(x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
+(id(A:Ob) ⋅ x:(A:Ob⇒Q:Ob))
+2
+3
 ```
 
-The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 3 and 4, for example `data/arrayterms.dat` or `data/inputs1`.
+The executable can be called with a file, e.g. `build/ast < data/inputs1`, which will print out that a solution was found and produce an output file `build/model.dat` which contains:
+```
+p0 : Path = Empty;
+r0 : Rule = R2r;
+p1 : Path = Empty;
+r1 : Rule = R1f;
+```
+This shows that the first rewrite step applies the second rule of *cat* (`f:(A:Ob⇒B:Ob) <-> (f:(A:Ob⇒B:Ob) ⋅ id(B:Ob)))`) in the reverse direction at the top level, followed by the first rule (`f:(A:Ob⇒B:Ob) <-> (id(A:Ob) ⋅ f:(A:Ob⇒B:Ob))`), also applied at the top level.

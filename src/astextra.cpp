@@ -60,19 +60,21 @@ CVC::Term pat_fun(const CVC::Solver & slv,
     std::map<size_t,Vvi> groups = distinct(gethash(term));
     Vt andargs; // Represent term as list of constraints
 
-    //std::cout << "ENTERING FOR LOOP " << print(thry, rule) << std::endl;
+    //std::cout << "ENTERING FOR LOOP for pattern " << term << std::endl;
     for (auto&& [k,v] : groups) {
         Vi rep = v.front();  // choose representative of equiv class
         //std::cout << "GETTING repE with rep size " << rep.size() << std::endl ;
-        CVC::Term repE = subterm(slv,x,rep);
-        //std::cout << "Getting sym " << std::endl;
-        const int sym = syms.at(subexpr(term,rep).sym);
-        //std::cout << "ADDING NODE CONSTRAINT " << std::endl;
+        CVC::Term repE = subterm(slv, x, rep);
+        Expr repX = subexpr(term, rep);
+        const int sym = syms.at(repX.sym);
 
-        // Node constraint on representative
-        CVC::Term repnode=node(slv,x.getSort(),repE);
-        andargs.push_back(slv.mkTerm(CVC::EQUAL,repnode,slv.mkReal(sym)));
-
+        // Node constraint on representative if not a variable
+        if (repX.kind != VarNode){
+            //std::cout << "Subexpr " << repX << "ADDING NODE CONSTRAINT " << sym << std::endl;
+            CVC::Term andarg=slv.mkTerm(CVC::EQUAL,node(slv,repE),slv.mkReal(sym));
+            //std::cout << andarg << "   IS " << slv.checkEntailed(andarg).isEntailed() << "  " << const_cast<CVC::Solver &>(slv).simplify(node(slv,repE))  << std::endl;
+            andargs.push_back(andarg);
+        }
         //std::cout << "ADDING EQ CONSTRAINT " << std::endl;
 
         // Eq constraint on all other members of eq class
@@ -107,6 +109,8 @@ CVC::Term rterm_fun(const CVC::Solver & slv,
     for (auto && [k,v] : distinct(srchash)) srchashrev[k]=v.front();
 
     // Construct target in CVC4, making reference to source when possible
+
+    //std::cout << "Calling construct with tar" << tar << " and src " << src << std::endl;
     CVC::Term res=construct(slv,x.getSort(),thry,tar,src,x,step);
     return res;
 }
@@ -122,7 +126,7 @@ CVC::Term getAt(const CVC::Solver & slv,
         pathConds.push_back(test(slv,pTerm,"P"+join(p)));
         getAtThens.push_back(subterm(slv,xTerm,p));
     }}
-    return ITE(slv, pathConds, getAtThens, errterm(slv,xTerm.getSort()));
+    return ITE(slv, pathConds, getAtThens, unit(slv,xTerm.getSort(),"Error"));
 }
 
 CVC::Term replaceAt(const CVC::Solver & slv,
@@ -130,12 +134,12 @@ CVC::Term replaceAt(const CVC::Solver & slv,
                     const CVC::Term & yTerm,
                     const CVC::Term & pTerm,
                    const Vvvi & paths) {
-    Vt pathConds, replaceAtThens;
+    Vt pathConds{test(slv,pTerm,"Empty")}, replaceAtThens{yTerm};
     for (auto&& ps : paths) { for (auto&& p : ps) {
         pathConds.push_back(test(slv,pTerm,"P"+join(p)));
         replaceAtThens.push_back(replP_fun(slv,xTerm,yTerm,p));
     }}
-    return ITE(slv, pathConds, replaceAtThens, errterm(slv,xTerm.getSort()));
+    return ITE(slv, pathConds, replaceAtThens, unit(slv,xTerm.getSort(),"Error"));
 }
 
 CVC::Term rewriteTop(const CVC::Solver & slv,
@@ -155,7 +159,7 @@ CVC::Term rewriteTop(const CVC::Solver & slv,
         ruleThens.push_back(rt);
     }}
 
-    return ITE(slv, ruleConds, ruleThens, errterm(slv,x.getSort()));
+    return ITE(slv, ruleConds, ruleThens, unit(slv,x.getSort(),"Error"));
 }
 
 

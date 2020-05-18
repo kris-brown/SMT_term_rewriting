@@ -38,6 +38,23 @@ TEST_CASE("Sub") {
     CHECK(sub(fxx,m)==fgygy);
 }
 
+
+TEST_CASE("infer") {
+
+    Theory t=cat();
+    Theory ut=upgradeT(t);
+    // infer that id.f  is Hom(A,B)
+    Expr idf = ut.rules.at(0).t2;
+    Expr f=idf.args.at(2), homab = f.args.at(0);
+    Expr homab2=infer(ut.sorts,ut.ops,idf.sym,
+                      {idf.args.at(1),idf.args.at(2)});
+
+    CHECK(homab==homab2);
+    // Composing g.f throws an error
+    Expr g=ut.rules.at(2).t2.args.at(1).args.at(2);
+    CHECK_THROWS(infer(ut.sorts,ut.ops,"cmp",{g,f}));
+
+}
 TEST_CASE("expr parser and printer") {
     Theory t=natarray();
     Vx xs = parse_exprs(t,"data/arrayterms.dat");
@@ -45,8 +62,12 @@ TEST_CASE("expr parser and printer") {
         CHECK(parse_expr(t, print(t,x))==x);}
 
     Theory h = cat();
-    CHECK_NOTHROW(parse_expr(h,"(f:(A:Ob⇒B:Ob) ⋅g:(B:Ob ⇒ C:Ob))"));
+    Expr fg = parse_expr(h,"(f:(A:Ob⇒B:Ob) ⋅g:(B:Ob ⇒ C:Ob))");
+
+    CHECK(fg==parse_expr(h,print(h,fg)));
 }
+
+
 
 TEST_CASE("parse theory") {
     Theory t1 = parseTheory("data/cat.dat");

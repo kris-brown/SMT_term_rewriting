@@ -1,5 +1,5 @@
-cat
-(f:(A:Ob⇒B:Ob) ⋅ id(B:Ob))
-f:(A:Ob⇒B:Ob)
-1
+data/cat.dat
+(x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
+(id(A:Ob) ⋅ x:(A:Ob⇒Q:Ob))
+2
 3

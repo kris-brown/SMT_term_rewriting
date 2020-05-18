@@ -44,25 +44,18 @@ Vvi paths_n(const int&  depth, const int& arity);
  */
 Vvvi all_paths(const int&  depth, const int& arity);
 
-
 /**
- * Create instance of None constructor of the AST sort
+ * Create instance of some constructor which takes no arguments
  *
  * @param solver
- * @param astSort - AST sort from create_datatypes()
- * @return - the CVC term None
+ * @param srt - Inductive datatype sort
+ * @param name - Name of the constructor
+ * @return - a CVC term (e.g. None, Empty, Error)
  */
-CVC::Term noneterm(const CVC::Solver & slv, const CVC::Sort & astSort);
 
-/**
- * Create instance of Error constructor of the AST sort
- *
- * @param solver
- * @param astSort - AST sort from create_datatypes()
- * @return - the CVC term Error
- */
-CVC::Term errterm(const CVC::Solver & slv, const CVC::Sort & astSort);
-
+CVC::Term unit(const CVC::Solver & slv,
+               const CVC::Sort & srt,
+               const std::string &name);
 /**
  * Number of AST selectors for the ast constructor
  *
@@ -80,7 +73,6 @@ int arity(const CVC::Sort & astSort);
  * @return - a CVC term with the node of the input
  */
 CVC::Term node(const CVC::Solver & slv,
-              const CVC::Sort & astSort,
               const CVC::Term & x) ;
 
 /**

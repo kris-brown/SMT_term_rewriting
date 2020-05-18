@@ -39,14 +39,11 @@ Vvvi all_paths(const int&  depth, const int& arity) {
         return res;
 }
 
-CVC::Term noneterm(const CVC::Solver & slv, const CVC::Sort & astSort) {
+CVC::Term unit(const CVC::Solver & slv,
+               const CVC::Sort & srt,
+               const std::string &name) {
     return slv.mkTerm(CVC::APPLY_CONSTRUCTOR,
-                      astSort.getDatatype().getConstructorTerm("None"));
-}
-
-CVC::Term errterm(const CVC::Solver & slv, const CVC::Sort & astSort) {
-    return slv.mkTerm(CVC::APPLY_CONSTRUCTOR,
-                      astSort.getDatatype().getConstructorTerm("Error"));
+                      srt.getDatatype().getConstructorTerm(name));
 }
 
 int arity(const CVC::Sort & astSort) {
@@ -54,9 +51,8 @@ int arity(const CVC::Sort & astSort) {
 }
 
 CVC::Term node(const CVC::Solver & slv,
-              const CVC::Sort & astSort,
               const CVC::Term & x) {
-    CVC::Term s=astSort.getDatatype().getConstructor("ast").getSelectorTerm("node");
+    CVC::Term s=x.getSort().getDatatype().getConstructor("ast").getSelectorTerm("node");
     return slv.mkTerm(CVC::APPLY_SELECTOR, s, x);
 }
 
@@ -76,7 +72,7 @@ CVC::Term ast(const CVC::Solver & slv,
               ) {
     Vt args{astSort.getDatatype().getConstructorTerm("ast"), n};
     for (auto && x: xs) args.push_back(x);
-    CVC::Term nt = noneterm(slv,astSort);
+    CVC::Term nt = unit(slv,astSort,"None");
     for (int i=0; i!=arity(astSort)-xs.size(); i++)
         args.push_back(nt);
     CVC::Term ret=slv.mkTerm(CVC::APPLY_CONSTRUCTOR,args);
@@ -94,7 +90,7 @@ CVC::Term replace(const CVC::Solver & slv,
         else {
             args.push_back(getarg(slv,x,j));}
     }
-    return ast(slv,astSort,node(slv,astSort,x),args);
+    return ast(slv,astSort,node(slv,x),args);
 }
 
 CVC::Term replP_fun(const CVC::Solver & slv,
@@ -108,8 +104,7 @@ CVC::Term replP_fun(const CVC::Solver & slv,
             subx = getarg(slv,subx,p.at(j));
         arg=replace(slv,p.at(i),subx,arg);
     }
-    CVC::Term t=replace(slv,p.at(0),x,arg);
-    return t;
+    return arg;
 }
 
 CVC::Term subterm(const CVC::Solver & slv,
@@ -156,6 +151,7 @@ CVC::Term construct(const CVC::Solver & slv,
         fv=freevar(tar,src);}
     for (auto && [k,v] : distinct(srchash)) srch[k]=v.front(); //reverse
     std::map<std::string,int> syms = symcode(t);
+
     return constructRec(slv,astSort,tar,{},src_t,srch,tarh,step,fv,syms);
 }
 

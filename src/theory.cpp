@@ -71,37 +71,37 @@ std::string print(const Theory & t, const Expr & e) {
         NodeType firstchild = e.args.size() ? e.args.at(0).kind : VarNode;
         bool sorted_app= (firstchild==SortNode) && (e.kind==AppNode);
         Vs children;
-        int i=0;
 
-        for (auto && a:e.args) {
+        for (int i=0; i != e.args.size();i++) {
             if ((i!=0) || (!sorted_app)) {
-                children.push_back(print(t,a));
-                i++;
+                children.push_back(print(t,e.args.at(i)));
             }
         }
+
         std::string pat= ((e.kind==SortNode) ? t.sorts.at(e.sym).pat : t.ops.at(e.sym).pat);
         Vs syms=split(pat,"{}");
         std::string ret;
         for (int i=0;i!=children.size();i++)
             ret+=syms.at(i) + children.at(i);
-
+        //std::cout << e << " is printed out as " << ret+syms.back() << std::endl;
         return ret+syms.back();
     }
 }
 
 std::string print(const Theory & t, const SortDecl & x){
     Vs args;
-    for (auto && a:x.args) args.push_back(print(t,a));
+    for (auto && a:x.args) args.push_back(print(t,uninfer(a)));
     return "Sort: "+x.sym+" "+x.pat+"\n\t"+join(args,"\n\t");
 }
 std::string print(const Theory & t, const OpDecl & x){
     Vs args;
-    for (auto && a:x.args) args.push_back(print(t,a));
+    for (auto && a:x.args) args.push_back(print(t,uninfer(a)));
     return "Op: "+x.sym+" "+x.pat+"\n\t"+join(args,"\n\t");
 
 }
 std::string print(const Theory & t, const Rule & x){
-    return "Rule: "+x.name+"\n\t"+print(t,x.t1)+"\n\t"+print(t,x.t2);
+    return "Rule: "+x.name+"\n\t"+print(t,uninfer(x.t1))
+            +"\n\t"+print(t,uninfer(x.t2));
 }
 
 std::string print(const Theory & t){
@@ -299,7 +299,7 @@ std::string trim(const std::string & x) {
 }
 
 // Compute hash of every element in the path
-std::map<Vi,size_t> gethash(const Expr e) {
+std::map<Vi,size_t> gethash(const Expr & e) {
     std::map<Vi,size_t> ret;
     Vi arghashes;
     for (int i=0;i != e.args.size();i++){
@@ -357,12 +357,19 @@ std::map<std::string,int> symcode(const Theory & t) {
     for(auto s : syms) res[s] = i++;
     return res;
 }
+std::string symcodestr(const Theory & t) {
+    std::map<std::string,int> code=symcode(t);
+    std::stringstream buf;
+    for (auto &&[k,v] : code) buf << " | " << k << " " << v ;
+    return buf.str();
+}
 
-
-void mergedict(MatchDict acc, const MatchDict & m){
+void mergedict(MatchDict & acc, const MatchDict & m){
     for (auto && [k,v] : m) {
+        //std::cout << "Adding " << k << " -> " << v << std::endl;
         if (acc.find(k)==acc.end()) acc.insert({k,v});
-        else if (acc.at(k) != v) acc.insert({"",v});
+        else if (acc.at(k) != v) {
+            acc.insert({"",v});}
     }
 }
 
@@ -398,8 +405,13 @@ Expr infer(const std::map<std::string,SortDecl>&  sorts,
              const Ve & args) {
     if (ops.find(sym)==ops.end())
         throw std::runtime_error("inferring a symbol ("+sym+")not in ops");
+    for (auto && a:args) {
+        if (a.kind==SortNode)
+            throw std::runtime_error("inferring a term that has a Sort as a direct argument: is this term already inferred?");
+    }
 
     Ve op_pat_args = ops.at(sym).args;
+
     if (op_pat_args.size()!=args.size()){
         std::stringstream buf;
         buf << args.size() << " inferred args" << std::endl;
@@ -414,12 +426,21 @@ Expr infer(const std::map<std::string,SortDecl>&  sorts,
         MatchDict newmatch = patmatch(pat,x);
         if (newmatch.find("") != newmatch.end()) {
             std::stringstream buf;
-            buf << "Pattern match fail for inferring arg " << i <<  std::endl;
+            buf << sym << " pattern match fail for inferring arg " << i <<  std::endl;
             buf << "Arg is " << x << std::endl << "pat is " << pat << std::endl;
             throw std::runtime_error(buf.str());
         }
         mergedict(match, newmatch);
+
+        if (match.find("") != match.end()) {
+            std::stringstream buf;
+            buf << sym << " pattern match fail given conflicting args after adding arg " << i << std::endl;
+            for (auto && a:args) buf << "\n\t" << a << std::endl;
+            throw std::runtime_error(buf.str());
+        }
+
     }
+
     return sub(ops.at(sym).sort, match);
 }
 
@@ -602,7 +623,7 @@ Expr ast_to_expr(const Theory & t, const std::shared_ptr<peg::Ast> & ast) {
      }
 }
 
-std::map<std::string,int> freevar(Expr x, Expr y) {
+std::map<std::string,int> freevar(const Expr & x, const Expr & y) {
     std::set<std::string> symx,symy;
     addx(symx,x,VarNode); addx(symy,y,VarNode);
 
@@ -615,3 +636,11 @@ std::map<std::string,int> freevar(Expr x, Expr y) {
 }
 
 
+Expr uninfer(const Expr & x) {
+    Vx newargs;
+    for (auto && a:x.args) {
+        if ((x.kind != AppNode) || (a.kind!=SortNode))
+            newargs.push_back(uninfer(a));
+    }
+    return {x.sym,x.kind,newargs};
+}

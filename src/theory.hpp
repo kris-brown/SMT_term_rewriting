@@ -113,20 +113,22 @@ std::string print(const Theory & t, const OpDecl & x);
 std::string print(const Theory & t, const Rule & x);
 
 // Paritioning
-std::map<Vi,size_t> gethash(const Expr e);
+std::map<Vi,size_t> gethash(const Expr & e);
 std::map<size_t,Vvi> distinct(const std::map<Vi,size_t>  & hashes);
 
 // Basic type inference
 Expr subexpr(const Expr & e, const std::vector<int> & pth);
 void addx(std::set<std::string> & syms,const Expr & x,const int & nodet=-1);
 std::map<std::string,int> symcode(const Theory & t);
-void mergedict(MatchDict acc, const MatchDict & m);
+std::string symcodestr(const Theory & t);
+void mergedict(MatchDict & acc, const MatchDict & m);
 MatchDict patmatch(const Expr &pat, const Expr &x);
 Expr sub(const Expr &x, const MatchDict & m);
 Expr infer(const std::map<std::string,SortDecl>&  sorts,
              const std::map<std::string,OpDecl> & ops,
              const std::string & sym,
              const Ve & args);
+Expr uninfer(const Expr & x); // undo infer
 
 // Upgrading unsorted terms to sorted terms
 Expr upgrade(const std::map<std::string,SortDecl>&  sorts,
@@ -155,6 +157,6 @@ Expr parse_expr(const Theory & t, const std::string & expr); // inverse to print
 Expr ast_to_expr(const Theory & t, const std::shared_ptr<peg::Ast> & ast);
 
 // Misc
-std::map<std::string,int> freevar(Expr x, Expr y);
+std::map<std::string,int> freevar(const Expr & x, const Expr & y);
 
 #endif

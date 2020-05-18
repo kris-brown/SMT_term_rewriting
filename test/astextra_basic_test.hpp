@@ -35,7 +35,7 @@ TEST_CASE("replace1"){
     CHECK(arity(astSort) == 4);
     CVC::Term l7 = ast(slv,astSort, slv.mkReal(7));
     CVC::Term l8 = ast(slv, astSort,  slv.mkReal(8));
-    CVC::Term node_l7 = node(slv, astSort, l7);
+    CVC::Term node_l7 = node(slv, l7);
     CVC::Term l17 = mkConst(slv, "l17", ast(slv, astSort,  slv.mkReal(1), {l7}));
     CVC::Term l18 = mkConst(slv, "l18", ast(slv, astSort,  slv.mkReal(1), {l8}));
     CVC::Term subl18 = mkConst(slv, "l178", replace(slv, 0, l17, l8)) ;
@@ -95,6 +95,24 @@ TEST_CASE("construct"){
 
 
 TEST_CASE("replPfun") {
+    CVC::Solver slv;
+    slv.setOption("produce-models", "true");
+    Theory t=upgradeT(monoid());
+    Vvvi paths = all_paths(2,2);
+    CVC::Sort astSort, pathSort;
+    std::tie (astSort,pathSort,std::ignore) = create_datatypes(slv,t,2);
+
+    Expr Ob=Sort("Ob"),x=Var("x",Ob),y=Var("y",Ob);
+    Expr xy=App("M",{x,y}), xx=App("M",{x,x});
+    CVC::Term xy_=mkConst(slv,"xy",construct(slv,astSort,t,upgrade(t,xy)));
+    CVC::Term xx_=mkConst(slv,"xx",construct(slv,astSort,t,upgrade(t,xx)));
+    CVC::Term x_=mkConst(slv,"x",construct(slv,astSort,t,upgrade(t,x)));
+    CVC::Term p2 = unit(slv,pathSort,"P2");
+    CVC::Term res = replP_fun(slv,xy_,x_,{2});
+    CVC::Term result=mkConst(slv,"result",res);
+    CVC::Term b1 = slv.mkTerm(CVC::EQUAL,xx_,result);
+    CHECK(slv.checkEntailed(b1).isEntailed());
+    writeModel(slv,"test/replP.dat");
 
 }
 
