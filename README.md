@@ -76,4 +76,4 @@ r0 : Rule = R2r;
 p1 : Path = Empty;
 r1 : Rule = R1f;
 ```
-This shows that the first rewrite step applies the second rule of *cat* (`f:(A:Ob⇒B:Ob) <-> (f:(A:Ob⇒B:Ob) ⋅ id(B:Ob)))`) in the reverse direction at the top level, followed by the first rule (`f:(A:Ob⇒B:Ob) <-> (id(A:Ob) ⋅ f:(A:Ob⇒B:Ob))`), also applied at the top level.
+This shows that the first rewrite step applies the second rule of *cat* (`f:(A:Ob⇒B:Ob) <-> (f:(A:Ob⇒B:Ob) ⋅ id(B:Ob)))`) in the reverse direction at the top level, followed by the first rule (`f:(A:Ob⇒B:Ob) <-> (id(A:Ob) ⋅ f:(A:Ob⇒B:Ob))`), in the forward direction and also at the top level.
