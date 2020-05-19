@@ -150,8 +150,9 @@ CVC::Term subterm(const CVC::Solver & slv,
  * @param s - The input string to be hashed
  * @return an int between 100 and 10000.
  */
-int strhash(const std::string & s);
+int64_t strhash(const std::string & s) ;
 
+std::string strhashinv(const int64_t & i);
 
 /**
  * Predicate which applies a tester to a term
@@ -162,6 +163,10 @@ int strhash(const std::string & s);
  * @returns - A CVC term which evaluates to a bool
 */
 CVC::Term test(const CVC::Solver & slv,
+               const CVC::Term & x,
+               const std::string & s);
+// Negation of test
+CVC::Term ntest(const CVC::Solver & slv,
                const CVC::Term & x,
                const std::string & s);
 
@@ -202,4 +207,8 @@ CVC::Term constructRec(const CVC::Solver & slv,
                        const int & step,
                        const std::map<std::string,int> fv,
                        const std::map<std::string,int> & syms);
+
+Expr parseCVCast(const Theory & t, std::shared_ptr<peg::Ast> ast) ;
+
+Expr parseCVC(const Theory & t, const std::string s);
 #endif

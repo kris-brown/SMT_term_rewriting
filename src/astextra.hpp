@@ -130,9 +130,11 @@ CVC::Term rewrite(const CVC::Solver & slv,
  * @param t2 - destination
  * @param steps - number of rewrites expected
  * @param depth - max depth for applying rewrites
+ * @returns the boolean term associated with a successful rewrite
+ * @
  */
 
-CVC::Term assert_rewrite(const CVC::Solver & slv,
+std::tuple<CVC::Term,Vt,Vt,Vt> assert_rewrite(const CVC::Solver & slv,
              const CVC::Sort & astSort,
              const CVC::Sort & pathSort,
              const CVC::Sort & ruleSort,

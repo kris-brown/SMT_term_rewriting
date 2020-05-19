@@ -68,13 +68,16 @@ CVC::Term pat_fun(const CVC::Solver & slv,
         Expr repX = subexpr(term, rep);
         const int sym = syms.at(repX.sym);
 
-        // Node constraint on representative if not a variable
+        // Node+leaf constraint on representative if not a variable
         if (repX.kind != VarNode){
             //std::cout << "Subexpr " << repX << "ADDING NODE CONSTRAINT " << sym << std::endl;
             CVC::Term andarg=slv.mkTerm(CVC::EQUAL,node(slv,repE),slv.mkReal(sym));
             //std::cout << andarg << "   IS " << slv.checkEntailed(andarg).isEntailed() << "  " << const_cast<CVC::Solver &>(slv).simplify(node(slv,repE))  << std::endl;
             andargs.push_back(andarg);
+            for (int i=repX.args.size();i!=arity(x.getSort());i++){
+                andargs.push_back(test(slv,getarg(slv,repE,i),"None")); }
         }
+
         //std::cout << "ADDING EQ CONSTRAINT " << std::endl;
 
         // Eq constraint on all other members of eq class
@@ -86,7 +89,7 @@ CVC::Term pat_fun(const CVC::Solver & slv,
         }
     }
 
-    CVC::Term ret=andargs.size()==1 ? andargs.front() : slv.mkTerm(CVC::AND,andargs);
+    CVC::Term ret = slv.mkTerm(CVC::AND,andargs);
     return ret;
 }
 
@@ -115,14 +118,13 @@ CVC::Term rterm_fun(const CVC::Solver & slv,
     return res;
 }
 
-
-
 CVC::Term getAt(const CVC::Solver & slv,
                 const CVC::Term & xTerm,
                 const CVC::Term & pTerm,
                 const Vvvi & paths) {
     CVC::Term err=unit(slv,xTerm.getSort(),"Error");
-    Vt pathConds{test(slv,xTerm,"Error"), test(slv, pTerm, "Empty")};
+    Vt pathConds{ntest(slv,xTerm,"ast"),
+                 test(slv, pTerm, "Empty")};
     Vt getAtThens{err, xTerm};
     for (auto&& ps : paths) { for (auto&& p : ps) {
         pathConds.push_back(test(slv,pTerm,"P"+join(p)));
@@ -138,10 +140,8 @@ CVC::Term replaceAt(const CVC::Solver & slv,
                    const Vvvi & paths) {
     CVC::Term err=unit(slv,xTerm.getSort(),"Error");
 
-    Vt pathConds{test(slv,xTerm,"Error"),
-                 test(slv,yTerm,"Error"),
-                 test(slv,pTerm,"Empty")};
-    Vt replaceAtThens{err,err,yTerm};
+    Vt pathConds{ntest(slv,xTerm,"ast"), test(slv,pTerm,"Empty")};
+    Vt replaceAtThens{err, yTerm};
     for (auto&& ps : paths) { for (auto&& p : ps) {
         pathConds.push_back(test(slv,pTerm,"P"+join(p)));
         replaceAtThens.push_back(replP_fun(slv,xTerm,yTerm,p));
@@ -154,7 +154,7 @@ CVC::Term rewriteTop(const CVC::Solver & slv,
                     const CVC::Term & rTerm,
                     const Theory & t,
                     const int & step) {
-    Vt ruleConds{test(slv,x,"Error")}, ruleThens{unit(slv,x.getSort(),"Error")};
+    Vt ruleConds{ntest(slv,x,"ast")}, ruleThens{unit(slv,x.getSort(),"Error")};
     std::map<std::string,int> syms=symcode(t);
     for (int i=1;i<=t.rules.size();i++) { for (auto && ch : {"f","r"})   {
         CVC::Term req=test(slv,rTerm,"R"+std::to_string(i)+ch);
@@ -187,20 +187,21 @@ CVC::Term rewrite(const CVC::Solver & slv,
     CVC::Term ret=replaceAt(slv, x, subbed, p, paths);
     //std::cout << "ret" << std::endl;
 
-    return slv.mkTerm(CVC4::api::ITE,test(slv,x,"Error"),
+    return slv.mkTerm(CVC4::api::ITE,ntest(slv,x,"ast"),
                       unit(slv,x.getSort(),"Error"), ret);
 }
 
-CVC::Term assert_rewrite(const CVC::Solver & slv,
-             const CVC::Sort & astSort,
-             const CVC::Sort & pathSort,
-             const CVC::Sort & ruleSort,
-             const Theory & t,
-             const CVC::Term & t1,
-             const CVC::Term & t2,
-             const int & steps,
-             const int & depth
-             ) {
+std::tuple<CVC::Term,Vt,Vt,Vt> assert_rewrite(
+    const CVC::Solver & slv,
+    const CVC::Sort & astSort,
+    const CVC::Sort & pathSort,
+    const CVC::Sort & ruleSort,
+    const Theory & t,
+    const CVC::Term & t1,
+    const CVC::Term & t2,
+    const int & steps,
+    const int & depth
+    ) {
     //std::cout << c1 << "\n\n" << c2 << std::endl;
     Vt ps,rs,xs{t1};
     for (int i=0;i<steps;i++){
@@ -210,9 +211,12 @@ CVC::Term assert_rewrite(const CVC::Solver & slv,
         ps.push_back(slv.mkConst(pathSort,"p"+istr));
         rs.push_back(slv.mkConst(ruleSort,"r"+istr));
         CVC::Term newx=rewrite(slv, t, xs.at(i),rs.at(i),ps.at(i),i,depth);
+        slv.assertFormula(test(slv, newx, "ast"));
+        for (auto && x:xs){
+            slv.assertFormula(slv.mkTerm(CVC::NOT,slv.mkTerm(CVC::EQUAL,x,newx)));}
         mkConst(slv,"step"+istr,newx);
         xs.push_back(newx);
     }
-
-    return mkConst(slv, "rw", slv.mkTerm(CVC::EQUAL,xs.back(),t2));
+    CVC::Term ret= mkConst(slv, "rw", slv.mkTerm(CVC::EQUAL,xs.back(),t2));
+    return std::make_tuple(ret,xs,ps,rs);
 }

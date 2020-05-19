@@ -71,12 +71,22 @@ CVC::Term ast(const CVC::Solver & slv,
               const Vt & xs
               ) {
     Vt args{astSort.getDatatype().getConstructorTerm("ast"), n};
-    for (auto && x: xs) args.push_back(x);
+    Vt conds;
+    CVC::Term err=unit(slv,astSort,"Error");
+    for (auto && x: xs) {
+        args.push_back(x);
+        conds.push_back(test(slv,x,"Error"));
+    }
+    CVC::Term condition;
+    if (xs.size()==0) condition=slv.mkFalse();
+    else if (xs.size()==1) condition=conds.front();
+    else condition=slv.mkTerm(CVC::OR, conds);
+
     CVC::Term nt = unit(slv,astSort,"None");
-    for (int i=0; i!=arity(astSort)-xs.size(); i++)
-        args.push_back(nt);
+    for (int i=0; i!=arity(astSort)-xs.size(); i++){
+        args.push_back(nt);}
     CVC::Term ret=slv.mkTerm(CVC::APPLY_CONSTRUCTOR,args);
-    return ret;
+    return slv.mkTerm(CVC::ITE,condition,err,ret);
 }
 
 CVC::Term replace(const CVC::Solver & slv,
@@ -111,7 +121,9 @@ CVC::Term subterm(const CVC::Solver & slv,
                    const CVC::Term & root,
                    const Vi & pth) {
     CVC::Term x = root;
-    assert(x.getSort().toString()=="AST");
+    if (x.getSort().toString()!="AST"){
+        throw std::runtime_error("Cannot call subterm on a non-AST");
+    }
     //std::cout << "\tin subterm with pth len " << pth.size() << " and got sort " << std::endl;
 
     CVC::DatatypeConstructor s = x.getSort().getDatatype().getConstructor("ast");
@@ -123,14 +135,37 @@ CVC::Term subterm(const CVC::Solver & slv,
     return x;
 }
 
-int strhash(const std::string & s) {
-    return 100 + std::abs(static_cast<int>(std::hash<std::string>()(s))) % 1000;
+
+int64_t strhash(const std::string & s) {
+    std::stringstream ss;
+    for (auto && i:s) ss << std::to_string(i-30);
+    return std::stol(ss.str());
+}
+std::string strhashinv(const int64_t & i) {
+    if (i > 0) {
+    std::stringstream ss;
+    std::string s=std::to_string(i);
+    for (int j=0;j!=s.size()/2;j++) {
+        ss << (char) (std::stoi(s.substr(2*j,2))+30);}
+    return ss.str();
+    } else if (i < 0) {
+        return "FREE"+std::to_string(std::abs(i));
+    }
+    else {
+         throw std::runtime_error("Cannot have variable code 0");
+    }
 }
 
 CVC::Term test(const CVC::Solver & slv,
                const CVC::Term & x,
                const std::string & s) {
     return slv.mkTerm(CVC::APPLY_TESTER,x.getSort().getDatatype().getConstructor(s).getTesterTerm(),x);
+}
+
+CVC::Term ntest(const CVC::Solver & slv,
+               const CVC::Term & x,
+               const std::string & s) {
+    return slv.mkTerm(CVC::NOT,test(slv,x,s));
 }
 
 
@@ -190,4 +225,52 @@ CVC::Term constructRec(const CVC::Solver & slv,
         }
         return ast(slv, astSort, node, args);
     }
+}
+
+Expr parseCVCast(const Theory & t, std::shared_ptr<peg::Ast> ast) {
+    std::string sym; NodeType nt; Vx args;
+    long i=std::stol(ast->nodes.at(0)->token);
+    for (auto &&[k,v] : symcode(t)) {
+        if (v==i){
+            sym=k;
+            if (t.ops.find(sym)!=t.ops.end()) nt=AppNode;
+            else if(t.sorts.find(sym)!=t.sorts.end()) nt=SortNode;
+            else nt=VarNode;
+        }
+    }
+    if (sym.empty()){
+        nt=VarNode; sym=strhashinv(i);
+    }
+    for (int i=0;i != ast->nodes.size(); i++) {
+        std::shared_ptr<peg::Ast> a=ast->nodes.at(i);
+        if (a->nodes.size()) {
+            args.push_back(parseCVCast(t,a->nodes.at(0)));
+        }
+    }
+    return {sym,nt,args};
+}
+Expr parseCVC(const Theory & t,
+              const std::string s)  {
+
+    peg::parser parser(R"(
+AST <- 'ast(' NUMBER Term* ')'
+Term <- AST / 'None'
+NUMBER <- < '-'? [0-9]+ >
+%whitespace  <-  [ \t\r\n,]*
+)");
+
+    assert((bool)parser == true);
+
+    parser.enable_ast();
+    parser.enable_packrat_parsing();
+    std::shared_ptr<peg::Ast> ast;
+
+    if (parser.parse(s.c_str(), ast)) {
+        return parseCVCast(t,ast);
+
+    } else {
+         throw std::runtime_error("syntax error in CVC term:"+s);
+
+    }
+
 }

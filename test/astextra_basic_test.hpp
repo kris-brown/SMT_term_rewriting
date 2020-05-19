@@ -124,3 +124,27 @@ TEST_CASE("test") {
 
 }
 
+TEST_CASE("parseCVC") {
+    CVC::Solver slv;
+    slv.setOption("produce-models", "true");
+    Theory t=upgradeT(cat());
+
+    CVC::Sort astSort;
+    std::tie (astSort,std::ignore,std::ignore) = create_datatypes(slv,t,2);
+    Expr expr=t.rules.at(0).t2;
+    CVC::Term x=construct(slv,astSort,t,expr);
+    Expr expr_= parseCVC(t,slv.simplify(x).toString());
+    CHECK(expr==expr_);
+
+    //Now something with variables that are not in the theory
+    Expr o=Sort("Ob"),q=Var("Q",{o}),z=Var("Z",{o});
+    Expr h=Sort("Hom",{q,z}),m=Var("m",{h});
+    CVC::Term m_=mkConst(slv,"m",construct(slv,astSort,t,m));
+    slv.checkSat();
+    Expr x2_= parseCVC(t,slv.getValue(m_).toString());
+    CHECK(m==x2_);
+    writeModel(slv,"test/parsecvc.dat");
+
+}
+
+

@@ -46,8 +46,6 @@ int main(int argc, char** argv)
     slv.setOption("produce-models", "true");
     mkConst(slv,"dic",slv.mkString(code, true));
 
-
-    std::cout << print(t) << std::endl;
     std::cout << "\n\nComputing...\n" << std::endl;
 
     // Declare datatypes
@@ -59,7 +57,9 @@ int main(int argc, char** argv)
     CVC::Term c1=construct(slv,astSort,t,t1),c2=construct(slv,astSort,t,t2);
     CVC::Term x1=mkConst(slv,"initial",c1), x2=mkConst(slv,"final",c2);
 
-    CVC::Term r=assert_rewrite(slv, astSort, pathSort,ruleSort, t, x1, x2, steps, depth);
+    CVC::Term r;
+    Vt xs,ps,rs;
+    std::tie (r,xs,ps,rs)=assert_rewrite(slv, astSort, pathSort,ruleSort, t, x1, x2, steps, depth);
     slv.assertFormula(r);
 
     if (!slv.checkSat().isSat()) {
@@ -70,8 +70,20 @@ int main(int argc, char** argv)
         slv.assertFormula(slv.mkTerm(CVC::NOT,r));
     } else {
         std::cout << "\nSolution found" << std::endl;
+        std::string div="\n**************************************\n";
+        std::cout << "Starting with:\n\t" << print(t,uninfer(
+            parseCVC(t,slv.getValue(xs.at(0)).toString())));
+        for (int i=0;i!=steps;i++){
+            std::string rval = slv.getValue(rs.at(i)).toString();
+            Rule rule=t.rules.at(std::stoi(rval.substr(1,rval.size()-2))-1);
+            Expr parsed=parseCVC(t,slv.getValue(xs.at(i+1)).toString());
+            std::cout << div << "Step " << i << ": apply " << rval << " ("
+                    << ((rval.back()=='f') ? "forward" : "reverse")
+                    << ")\n" << print(t,rule) << "\nat subpath "
+                    << slv.getValue(ps.at(i)) << " to yield:\n\t"
+                    << print(t,uninfer(parsed)) << std::endl;
+        }
     }
-
     writeModel(slv,"model.dat");
     return 0;
 }
