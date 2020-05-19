@@ -129,6 +129,7 @@ CVC::Term rewrite(const CVC::Solver & slv,
  * @param t1 - starting point
  * @param t2 - destination
  * @param steps - number of rewrites expected
+ * @param depth - max depth for applying rewrites
  */
 
 CVC::Term assert_rewrite(const CVC::Solver & slv,
@@ -138,6 +139,7 @@ CVC::Term assert_rewrite(const CVC::Solver & slv,
              const Theory & t,
              const CVC::Term & t1,
              const CVC::Term & t2,
-             const int & steps
+             const int & steps,
+             const int & depth
              );
 #endif

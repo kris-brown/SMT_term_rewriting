@@ -121,12 +121,14 @@ CVC::Term getAt(const CVC::Solver & slv,
                 const CVC::Term & xTerm,
                 const CVC::Term & pTerm,
                 const Vvvi & paths) {
-    Vt pathConds{test(slv, pTerm, "Empty")}, getAtThens{xTerm};
+    CVC::Term err=unit(slv,xTerm.getSort(),"Error");
+    Vt pathConds{test(slv,xTerm,"Error"), test(slv, pTerm, "Empty")};
+    Vt getAtThens{err, xTerm};
     for (auto&& ps : paths) { for (auto&& p : ps) {
         pathConds.push_back(test(slv,pTerm,"P"+join(p)));
         getAtThens.push_back(subterm(slv,xTerm,p));
     }}
-    return ITE(slv, pathConds, getAtThens, unit(slv,xTerm.getSort(),"Error"));
+    return ITE(slv, pathConds, getAtThens, err);
 }
 
 CVC::Term replaceAt(const CVC::Solver & slv,
@@ -134,12 +136,17 @@ CVC::Term replaceAt(const CVC::Solver & slv,
                     const CVC::Term & yTerm,
                     const CVC::Term & pTerm,
                    const Vvvi & paths) {
-    Vt pathConds{test(slv,pTerm,"Empty")}, replaceAtThens{yTerm};
+    CVC::Term err=unit(slv,xTerm.getSort(),"Error");
+
+    Vt pathConds{test(slv,xTerm,"Error"),
+                 test(slv,yTerm,"Error"),
+                 test(slv,pTerm,"Empty")};
+    Vt replaceAtThens{err,err,yTerm};
     for (auto&& ps : paths) { for (auto&& p : ps) {
         pathConds.push_back(test(slv,pTerm,"P"+join(p)));
         replaceAtThens.push_back(replP_fun(slv,xTerm,yTerm,p));
     }}
-    return ITE(slv, pathConds, replaceAtThens, unit(slv,xTerm.getSort(),"Error"));
+    return ITE(slv, pathConds, replaceAtThens, err);
 }
 
 CVC::Term rewriteTop(const CVC::Solver & slv,
@@ -147,7 +154,7 @@ CVC::Term rewriteTop(const CVC::Solver & slv,
                     const CVC::Term & rTerm,
                     const Theory & t,
                     const int & step) {
-    Vt ruleConds,ruleThens;
+    Vt ruleConds{test(slv,x,"Error")}, ruleThens{unit(slv,x.getSort(),"Error")};
     std::map<std::string,int> syms=symcode(t);
     for (int i=1;i<=t.rules.size();i++) { for (auto && ch : {"f","r"})   {
         CVC::Term req=test(slv,rTerm,"R"+std::to_string(i)+ch);
@@ -171,7 +178,7 @@ CVC::Term rewrite(const CVC::Solver & slv,
                   const int & step,
                   const int & depth
                   ) {
-    Vvvi paths = all_paths(depth,arity(x.getSort())-1);
+    Vvvi paths = all_paths(depth,max_arity(t));
 
     CVC::Term presub = getAt(slv,x,p,paths);
     //std::cout << "presub" << std::endl;
@@ -180,7 +187,8 @@ CVC::Term rewrite(const CVC::Solver & slv,
     CVC::Term ret=replaceAt(slv, x, subbed, p, paths);
     //std::cout << "ret" << std::endl;
 
-    return ret;
+    return slv.mkTerm(CVC4::api::ITE,test(slv,x,"Error"),
+                      unit(slv,x.getSort(),"Error"), ret);
 }
 
 CVC::Term assert_rewrite(const CVC::Solver & slv,
@@ -190,15 +198,20 @@ CVC::Term assert_rewrite(const CVC::Solver & slv,
              const Theory & t,
              const CVC::Term & t1,
              const CVC::Term & t2,
-             const int & steps
+             const int & steps,
+             const int & depth
              ) {
     //std::cout << c1 << "\n\n" << c2 << std::endl;
     Vt ps,rs,xs{t1};
     for (int i=0;i<steps;i++){
+        std::string istr=std::to_string(i);
+
         //std::cout <<  "REWRITE STEP " << i << std::endl;
-        ps.push_back(slv.mkConst(pathSort,"p"+std::to_string(i)));
-        rs.push_back(slv.mkConst(ruleSort,"r"+std::to_string(i)));
-        xs.push_back(rewrite(slv, t, xs.at(i),rs.at(i),ps.at(i),i,steps));
+        ps.push_back(slv.mkConst(pathSort,"p"+istr));
+        rs.push_back(slv.mkConst(ruleSort,"r"+istr));
+        CVC::Term newx=rewrite(slv, t, xs.at(i),rs.at(i),ps.at(i),i,depth);
+        mkConst(slv,"step"+istr,newx);
+        xs.push_back(newx);
     }
 
     return mkConst(slv, "rw", slv.mkTerm(CVC::EQUAL,xs.back(),t2));

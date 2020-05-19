@@ -124,7 +124,7 @@ CVC::Term subterm(const CVC::Solver & slv,
 }
 
 int strhash(const std::string & s) {
-    return 100 + static_cast<int>(std::hash<std::string>()(s)) % 1000;
+    return 100 + std::abs(static_cast<int>(std::hash<std::string>()(s))) % 1000;
 }
 
 CVC::Term test(const CVC::Solver & slv,

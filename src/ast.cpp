@@ -40,7 +40,6 @@ int main(int argc, char** argv)
     std::cout << "Give a maximum depth for applying rewrites: ";
     getline(std::cin, depthstr);
     depth=std::stoi(depthstr);
-    std::cout << "\nComputing...\n" << std::endl;
 
     std::string code=symcodestr(t);
     CVC::Solver slv;
@@ -49,16 +48,18 @@ int main(int argc, char** argv)
 
 
     std::cout << print(t) << std::endl;
+    std::cout << "\n\nComputing...\n" << std::endl;
 
     // Declare datatypes
     CVC::Sort astSort,pathSort,ruleSort;
     std::tie (astSort,pathSort,ruleSort) = create_datatypes(slv,t,depth);
+    writeModel(slv,"model.dat");
 
 
     CVC::Term c1=construct(slv,astSort,t,t1),c2=construct(slv,astSort,t,t2);
     CVC::Term x1=mkConst(slv,"initial",c1), x2=mkConst(slv,"final",c2);
 
-    CVC::Term r=assert_rewrite(slv, astSort, pathSort,ruleSort, t, x1, x2, steps);
+    CVC::Term r=assert_rewrite(slv, astSort, pathSort,ruleSort, t, x1, x2, steps, depth);
     slv.assertFormula(r);
 
     if (!slv.checkSat().isSat()) {
