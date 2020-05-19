@@ -18,7 +18,7 @@ Op write "write({},{},{})" "Write object o to position i" Arr [A:Arr, i:N, o:Ob]
 Rule row "Read-over-write: if indices not equal, look at previous write"
     read(write(A:Arr, i:N, o:Ob), j:N)
     ite(E(i:N, j:N), o:Ob, read(A:Arr,j:N))
-Rule eq1 "Recursively peel of successor"
+Rule eq1 "Recursively peel off successor"
     E(i:N,j:N)
     E(S(i:N),S(j:N))
 Rule eq2 "Base case, zero vs zero" T E(Z, Z)
