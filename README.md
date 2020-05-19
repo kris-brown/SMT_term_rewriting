@@ -41,7 +41,7 @@ Rule eq1 "Recursively peel of successor"
     E(S(i:N),S(j:N))
 ```
 
-The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 3 and 4, see for example `data/inputs1` or `data/inputs2`.
+The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 2 and 3, see for example `data/inputs1` or `data/inputs2`.
 
 ## Example
 
