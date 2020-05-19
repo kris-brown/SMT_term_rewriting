@@ -20,7 +20,7 @@ To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile th
 4. How many rewrite steps are needed
 5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
 
-GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder. However, it's also possible to point to a file specifying a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is an snippet of a theory of arrays, with which we can read and write objects:
+GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder. However, it's also possible to point to a file which specifies a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is a snippet of a theory of arrays (`data/natarray.dat`):
 ```
 Sort Ob "Ob" "Some datatype that can be stored in an array" []
 Sort N "Nat" "A natural number: 0, 1, 2, ..." []
