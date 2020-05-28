@@ -92,7 +92,7 @@ Rule parseRule(std::shared_ptr<peg::Ast> ast, KD kd);
 Expr parseExpr(std::shared_ptr<peg::Ast> ast, KD kd);
 
 // Simple Constructors of Exprs
-Expr Sort(const std::string & sym, const Ve & args=Ve{});
+Expr Srt(const std::string & sym, const Ve & args=Ve{});
 Expr App(const std::string & sym, const Ve & args=Ve{});
 Expr Var(const std::string & sym, Expr srt);
 

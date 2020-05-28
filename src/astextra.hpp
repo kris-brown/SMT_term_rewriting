@@ -1,7 +1,7 @@
 #ifndef ASTEXTRA
 #define ASTEXTRA
 #include<vector>
-#include <cvc4/api/cvc4cpp.h>
+#include "cvc4/api/cvc4cpp.h"
 #include "astextra_basic.hpp"
 
 typedef std::map<int, CVC::Term> Tmap;

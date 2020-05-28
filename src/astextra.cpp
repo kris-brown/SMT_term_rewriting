@@ -1,5 +1,5 @@
 #include "astextra.hpp"
-#include <src/cvc4extra.hpp>
+#include "cvc4extra.hpp"
 
 
 std::tuple<CVC::Sort,CVC::Sort,CVC::Sort> create_datatypes(

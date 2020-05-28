@@ -1,4 +1,4 @@
-#ifndef THEORIES  // #include guards
+#ifndef THEORIES
 #define THEORIES
 #include <stdexcept>
 #include <string>

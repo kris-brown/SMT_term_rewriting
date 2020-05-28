@@ -65,7 +65,7 @@ TEST_CASE("construct"){
     CVC::Term x1 = mkConst(slv,"x",ast(slv, astSort,  slv.mkReal(sc["x"]), {ob1}));
     CVC::Term y1 = mkConst(slv,"y",ast(slv, astSort,  slv.mkReal(sc["y"]), {ob1}));
     CVC::Term q1 = mkConst(slv, "q",ast(slv,astSort,slv.mkReal(strhash("q")),{ob1}));
-    Expr Ob=Sort("Ob"), x={"x",VarNode,{Ob}},y={"y",VarNode,{Ob}}, q={"q",VarNode,{Ob}};
+    Expr Ob=Srt("Ob"), x={"x",VarNode,{Ob}},y={"y",VarNode,{Ob}}, q={"q",VarNode,{Ob}};
     CVC::Term x2 = mkConst(slv,"x2",construct(slv,astSort,t,x));
     CVC::Term q2 = mkConst(slv,"q2",construct(slv,astSort,t,q));
 
@@ -102,7 +102,7 @@ TEST_CASE("replPfun") {
     CVC::Sort astSort, pathSort;
     std::tie (astSort,pathSort,std::ignore) = create_datatypes(slv,t,2);
 
-    Expr Ob=Sort("Ob"),x=Var("x",Ob),y=Var("y",Ob);
+    Expr Ob=Srt("Ob"),x=Var("x",Ob),y=Var("y",Ob);
     Expr xy=App("M",{x,y}), xx=App("M",{x,x});
     CVC::Term xy_=mkConst(slv,"xy",construct(slv,astSort,t,upgrade(t,xy)));
     CVC::Term xx_=mkConst(slv,"xx",construct(slv,astSort,t,upgrade(t,xx)));
@@ -137,8 +137,8 @@ TEST_CASE("parseCVC") {
     CHECK(expr==expr_);
 
     //Now something with variables that are not in the theory
-    Expr o=Sort("Ob"),q=Var("Q",{o}),z=Var("Z",{o});
-    Expr h=Sort("Hom",{q,z}),m=Var("m",{h});
+    Expr o=Srt("Ob"),q=Var("Q",{o}),z=Var("Z",{o});
+    Expr h=Srt("Hom",{q,z}),m=Var("m",{h});
     CVC::Term m_=mkConst(slv,"m",construct(slv,astSort,t,m));
     slv.checkSat();
     Expr x2_= parseCVC(t,slv.getValue(m_).toString());

@@ -1,10 +1,12 @@
+#ifndef THEORY_CAT
+#define THEORY_CAT
 
 #include "../theory.hpp"
 
 Theory cat() {
-    Expr Ob=Sort("Ob");
+    Expr Ob=Srt("Ob");
     Expr A=Var("A",Ob), B=Var("B",Ob), C=Var("C",Ob), D=Var("D",Ob);
-    Expr HomAA=Sort("Hom",{A,A}), HomAB=Sort("Hom",{A,B}), HomBC=Sort("Hom",{B,C}), HomCD=Sort("Hom",{C,D}), HomAC=Sort("Hom",{A,C});
+    Expr HomAA=Srt("Hom",{A,A}), HomAB=Srt("Hom",{A,B}), HomBC=Srt("Hom",{B,C}), HomCD=Srt("Hom",{C,D}), HomAC=Srt("Hom",{A,C});
     Expr idA=App("id",{A}),idB=App("id",{B});
     Expr f=Var("f",HomAB),g=Var("g",HomBC),h=Var("h",HomCD);
     Expr idf=App("cmp",{idA,f}),fid=App("cmp",{f,idB}),fg=App("cmp",{f,g}),gh=App("cmp",{g,h});
@@ -23,3 +25,5 @@ Theory cat() {
     return {"cat", std::vector<SortDecl>{dOb, dHom}, {idOp,cmpOp}, {idl,idr,asc}};
 
 }
+
+#endif

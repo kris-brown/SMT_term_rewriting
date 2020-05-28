@@ -4,11 +4,11 @@
 #include <fstream>
 #include <sstream>
 
-#include <cvc4/api/cvc4cpp.h>
-#include <src/cvc4extra.hpp>
-#include <src/astextra.hpp>
-#include <src/theory.hpp>
-#include <src/theories/theories.hpp>
+#include "cvc4/api/cvc4cpp.h"
+#include "cvc4extra.hpp"
+#include "astextra.hpp"
+#include "theory.hpp"
+#include "theories/theories.hpp"
 
 
 Theory input_theory(const std::string t) {

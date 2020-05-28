@@ -2,8 +2,9 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <src/theory.hpp>
 #include <regex>
+
+#include "theory.hpp"
 
  // Safe constructor
 Expr::Expr(const std::string s,const NodeType k,const std::vector<Expr> a) :
@@ -272,7 +273,7 @@ void Theory::validate_sorted_theory(){
 }
 
 // Simple Constructors of Exprs
-Expr Sort(const std::string & sym, const Ve & args) {
+Expr Srt(const std::string & sym, const Ve & args) {
     return Expr{sym, SortNode, args};
 }
 Expr App(const std::string & sym, const Ve & args) {

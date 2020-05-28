@@ -1,10 +1,13 @@
+#ifndef THEORY_NATARRAY
+#define THEORY_NATARRAY
+
 #include "../theory.hpp"
 
 // Arrays indexed by naturals which store objects of some type. We can read/write to the arrays.
 
 Theory natarray() {
     // Useful shorthand Exprs
-    Expr Ob=Sort("Ob"), Nat=Sort("Nat"), Bool=Sort("Bool"), Arr=Sort("Arr");
+    Expr Ob=Srt("Ob"), Nat=Srt("Nat"), Bool=Srt("Bool"), Arr=Srt("Arr");
     Expr o=Var("o", Ob), p=Var("p", Ob), A=Var("A", Arr), i=Var("i", Nat), j=Var("j", Nat), b=Var("b", Bool);
     Expr Si=App("S",{i}),Z=App("Z"),ZeZ=App("E",{Z,Z});
     Expr True=App("T"),False=App("F");
@@ -39,3 +42,4 @@ Theory natarray() {
     return {"natarray", sorts,ops,rules};
 }
 
+#endif

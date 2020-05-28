@@ -1,7 +1,7 @@
 #ifndef CVC4EXTRA
 #define CVC4EXTRA
 #include<vector>
-#include <cvc4/api/cvc4cpp.h>
+#include "cvc4/api/cvc4cpp.h"
 typedef std::vector<CVC4::api::Term> Vt;
 
 /*

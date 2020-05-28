@@ -9,11 +9,13 @@ This is a very expressive language, but to be useful we must be able to identify
 
 
 ## TO-DO
- - Connect to [SMT-switch](https://github.com/makaimann/smt-switch) and [cosa2](https://github.com/upscale-project/cosa2) to do model checking for an unspecified number of rewrites.
+ - Reimplement CVC4 code with cosa2 in order to do model checking for an arbitrary (not pre-specified) number of rewrites.
 
 ## Usage
 
-To run this, first install [CVC4](https://github.com/CVC4/CVC4), then compile the program `src/ast.cpp` (this works on my Mac by running `src/bin/build.sh`). The executable prompts the user for the following inputs:
+To run this, first install [CVC4](https://github.com/CVC4/CVC4) and [cosa2](https://github.com/upscale-project/cosa2), and add the install locations to `LD_LIBRARY_PATH`. Then the main program and tests can be built with `make all` and `make test` respectively.
+
+The main executable prompts the user for the following inputs:
 1. A user-specified theory (by name or path)
 2. A starting term in that theory
 3. A goal term in that theory

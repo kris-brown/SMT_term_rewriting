@@ -1,5 +1,5 @@
-#include <src/cvc4extra.hpp>
 #include <fstream>
+#include "cvc4extra.hpp"
 
 
 CVC4::api::Term mkConst(const CVC4::api::Solver & slv,

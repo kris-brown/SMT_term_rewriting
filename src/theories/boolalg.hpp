@@ -1,9 +1,12 @@
+#ifndef THEORY_BOOLALG
+#define THEORY_BOOLALG
+
 #include "../theory.hpp"
 
 // Boolean algebra
 
 Theory boolalg() {
-    Expr Bool=Sort("Bool");
+    Expr Bool=Srt("Bool");
     Expr b = Var("b",Bool),x = Var("x",Bool),y = Var("y",Bool),z = Var("z",Bool);
 
    SortDecl dBool{"Bool","Bool",{},"Underlying set"};
@@ -44,3 +47,5 @@ Theory boolalg() {
 
     return {"boolalg", sorts,ops,rules};
 }
+
+#endif

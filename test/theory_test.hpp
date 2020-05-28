@@ -81,7 +81,7 @@ TEST_CASE("parse theory") {
 }
 
 TEST_CASE("mk_freevar") {
-    Expr s=Sort("X");
+    Expr s=Srt("X");
     Expr x=Var("x",s),y=Var("y",s),z=Var("z",s);
     Expr xy=App("+",{x,y}),xyz=App("f",{z,y,x});
     CHECK(freevar(xy,xyz).empty());
