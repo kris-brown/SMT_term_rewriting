@@ -19,7 +19,7 @@ LDFLAGS  := \
  -L/Users/ksb/cosa2clone/local/lib
 LDLIBS   := -lcosa2 -lsmt-switch-cvc4 -lsmt-switch -lgmp
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(EXE)
 
@@ -30,12 +30,12 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR):
-	mkdir $@
+	mkdir -p $@
 
-test: $(OBJ_DIR)/test.o $(OBJ)
+test: $(OBJ_DIR)/test.o
 	$(CXX) $(LDFLAGS) $(LDLIBS) $(OBJ_NOMAIN) $(OBJ_DIR)/test.o -o build/runtest
 
-$(OBJ_DIR)/test.o: $(OBJ)
+$(OBJ_DIR)/test.o:
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c test/test.cpp -o obj/test.o
 
 clean:
