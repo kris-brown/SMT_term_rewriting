@@ -15,8 +15,8 @@ The main executable prompts the user for the following inputs:
 1. A user-specified theory (by name or path)
 2. A starting term in that theory
 3. A goal term in that theory
-4. How many rewrite steps are needed
-5. Max depth in the abstract syntax tree we want to be able to apply rewrites.
+4. Max number of rewrite steps to search for
+5. Max depth in the abstract syntax tree for which we want to be able to apply rewrite rules.
 
 GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder. However, it's also possible to point to a file which specifies a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is a snippet of a theory of arrays (`data/natarray.dat`):
 ```
