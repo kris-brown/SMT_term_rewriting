@@ -100,9 +100,20 @@ std::string print(const Theory & t, const OpDecl & x){
     return "Op: "+x.sym+" "+x.pat+"\n\t"+join(args,"\n\t");
 
 }
-std::string print(const Theory & t, const Rule & x){
-    return "Rule: "+x.name+"\n\t"+print(t,uninfer(x.t1))
-            +"\n\t"+print(t,uninfer(x.t2));
+std::string print(const Theory & t, const Rule & x, const int & dir){
+    std::string p1="\t",p2="\t";
+    switch (dir) {
+        case 1:
+            p1 += "⟵\t";
+            p2 += "⟶\t";
+            break;
+        case 0:
+            p2 += "⟵\t";
+            p1 += "⟶\t";
+            break;
+    }
+    return "Rule: "+x.name+"\n"+p1+print(t,uninfer(x.t1))
+            +"\n"+p2+print(t,uninfer(x.t2));
 }
 
 std::string print(const Theory & t){

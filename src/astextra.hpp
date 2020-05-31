@@ -52,7 +52,7 @@ smt::Term pat_fun(const smt::SmtSolver & slv,
 smt::Term rterm_fun(const smt::SmtSolver & slv,
                     const Theory & thry,
                     const smt::Term & x,
-                    const int & step,
+                    const smt::Term & step,
                     const int & ruleind,
                     const std::string & dir);
 
@@ -101,7 +101,7 @@ smt::Term rewriteTop(const smt::SmtSolver & slv,
                     const smt::Term & x,
                     const smt::Term & rTerm,
                     const Theory & t,
-                    const int & step);
+                    const smt::Term & step);
 /**
  * ASSERT that t1 can be rewritten into t2 in (exactly) some number of rewrites.
  *
@@ -117,7 +117,7 @@ smt::Term rewrite(const smt::SmtSolver & slv,
                   const smt::Term & x,
                   const smt::Term & r,
                   const smt::Term & p,
-                  const int & step,
+                  const smt::Term & step,
                   const int & depth
                   ) ;
 #endif

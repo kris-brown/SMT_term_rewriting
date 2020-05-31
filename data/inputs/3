@@ -1,5 +1,5 @@
 data/cat.dat
 (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
-(id(A:Ob) ⋅ x:(A:Ob⇒Q:Ob))
-2
+y:(A:Ob⇒Q:Ob)
+3
 3

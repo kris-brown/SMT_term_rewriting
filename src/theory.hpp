@@ -110,7 +110,7 @@ std::string print(const Theory & t, const Expr & e); // Inverse to parse_expr
 std::string print(const Theory & t);
 std::string print(const Theory & t, const SortDecl & x);
 std::string print(const Theory & t, const OpDecl & x);
-std::string print(const Theory & t, const Rule & x);
+std::string print(const Theory & t, const Rule & x, const int & dir=-1);
 
 // Paritioning
 std::map<Vi,size_t> gethash(const Expr & e);

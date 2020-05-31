@@ -1,0 +1,5 @@
+data/cat.dat
+(x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
+(id(A:Ob) ⋅ x:(A:Ob⇒Q:Ob))
+10
+3

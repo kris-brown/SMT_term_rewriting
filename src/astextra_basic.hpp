@@ -185,7 +185,7 @@ smt::Term construct(const smt::SmtSolver & slv,
                     const Expr & tar,
                     const Expr & src=Expr{"?",AppNode,{}},
                     const smt::Term & src_t=smt::Term{},
-                    const int & step=0);
+                    const smt::Term & step=nullptr);
 
 /**
  * Recursively construct a CVC term from an expression
@@ -203,7 +203,7 @@ smt::Term constructRec(const smt::SmtSolver & slv,
                        const smt::Term & src_t,
                        const std::map<size_t,Vi> & srchsh,
                        const std::map<Vi,size_t> & tarhsh,
-                       const int & step,
+                       const smt::Term & step,
                        const std::map<std::string,int> fv,
                        const std::map<std::string,int> & syms);
 

@@ -175,7 +175,12 @@ smt::Term construct(const smt::SmtSolver & slv,
                     const Expr & tar,
                     const Expr & src,
                     const smt::Term & src_t,
-                    const int & step) {
+                    const smt::Term & step) {
+
+    smt::Term step2 = (step != NULL) ? step :
+            slv->make_term(0,slv->make_sort(smt::INT));
+
+
     std::map<Vi,size_t> srchash, tarh=gethash(tar);
     std::map<std::string,int> fv;
     std::map<size_t,Vi> srch;
@@ -185,7 +190,7 @@ smt::Term construct(const smt::SmtSolver & slv,
     for (auto && [k,v] : distinct(srchash)) srch[k]=v.front(); //reverse
     std::map<std::string,int> syms = symcode(t);
 
-    return constructRec(slv,astSort,tar,{},src_t,srch,tarh,step,fv,syms);
+    return constructRec(slv,astSort,tar,{},src_t,srch,tarh,step2,fv,syms);
 }
 
 smt::Term constructRec(const smt::SmtSolver & slv,
@@ -195,7 +200,7 @@ smt::Term constructRec(const smt::SmtSolver & slv,
                        const smt::Term & src_t,
                        const std::map<size_t,Vi> & srchsh,
                        const std::map<Vi,size_t> & tarhsh,
-                       const int & step,
+                       const smt::Term & step,
                        const std::map<std::string,int> fv,
                        const std::map<std::string,int> & syms){
 
@@ -206,7 +211,10 @@ smt::Term constructRec(const smt::SmtSolver & slv,
     else {
         smt::Term node;
         if (fv.find(tar.sym)!=fv.end()) {
-            node=slv->make_term(-(10*step + fv.at(tar.sym)),Int);
+            smt::Term n10 = slv->make_term(-10, Int);
+            smt::Term tenstep=slv->make_term(smt::Mult, n10,step);
+            smt::Term offset=slv->make_term(fv.at(tar.sym),Int);
+            node=slv->make_term(smt::Plus, tenstep, offset);;
         }
         else if (syms.find(tar.sym)!=syms.end()) {
             node=slv->make_term(syms.at(tar.sym),Int);

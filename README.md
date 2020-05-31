@@ -43,11 +43,11 @@ Rule eq1 "Recursively peel off successor"
     E(S(i:N),S(j:N))
 ```
 
-The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 2 and 3, see for example `data/inputs1` or `data/inputs2`.
+The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 2 and 3; see examples in `data/inputs/`.
 
 ## Examples
 
-Consider the example using the theory of categories in `data/inputs1` which searches for a rewrite path of length 2:
+Consider the example using the theory of categories in `data/inputs/1` which searches for a rewrite path of length 2:
 ```
 data/cat.dat
 (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
@@ -56,88 +56,95 @@ data/cat.dat
 3
 ```
 
-The executable can be called with a file, e.g. `build/ast < data/inputs1`, which will print out the following results:
+The executable can be called with a file, e.g. `build/ast < data/inputs/1`, which will print out the following results:
 
 ```
-Solution found
-Starting with:
-        (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
+
+
+2-step solution found
+
+
+Starting from (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
+
 **************************************
 Step 0: apply R1f (forward)
 Rule: idl
-        f:(A:Ob⇒B:Ob)
-        (id(A:Ob) ⋅ f:(A:Ob⇒B:Ob))
+        ⟵       f:(A:Ob⇒B:Ob)
+        ⟶       (id(A:Ob) ⋅ f:(A:Ob⇒B:Ob))
 at subpath Empty to yield:
         (id(A:Ob) ⋅ (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob)))
 
 **************************************
 Step 1: apply R2r (reverse)
 Rule: idr
-        f:(A:Ob⇒B:Ob)
-        (f:(A:Ob⇒B:Ob) ⋅ id(B:Ob))
+        ⟶       f:(A:Ob⇒B:Ob)
+        ⟵       (f:(A:Ob⇒B:Ob) ⋅ id(B:Ob))
 at subpath P2 to yield:
-        (id(A:Ob) ⋅ x:(A:Ob⇒Q:Ob))
+        (id(A:Ob) ⋅ (x:(A:Ob⇒Q:Ob)))
+
 ````
 It applies the left and right identity laws, though not in the order that a human would choose.
 
-Likewise, for `data/inputs2` we model writing `p` to position 1 of some array, `o` to position 0, and then reading the value at position 1. We can prove that the result of this sequence of events is tantamount to just `p`:
+Likewise, for `data/inputs/2` we model writing `p` to position 1 of some array, `o` to position 0, and then reading the value at position 1. We can prove that the result of this sequence of events is tantamount to just `p`:
 ```
-Solution found
-Starting with:
-        read(write(write(A:Arr,S(0),p:Ob),0,o:Ob),S(0))
+7-step solution found
+
+
+Starting from read(write(write(A:Arr,S(0),p:Ob),0,o:Ob),S(0))
+
 **************************************
 Step 0: apply R1f (forward)
 Rule: row
-        read(write(A:Arr,i:Nat,o:Ob),j:Nat)
-        ite((i:Nat≡j:Nat),o:Ob,read(A:Arr,j:Nat))
+        ⟵       read(write(A:Arr,i:Nat,o:Ob),j:Nat)
+        ⟶       ite((i:Nat≡j:Nat),o:Ob,read(A:Arr,j:Nat))
 at subpath Empty to yield:
         ite((0≡S(0)),o:Ob,read(write(A:Arr,S(0),p:Ob),S(0)))
 
 **************************************
 Step 1: apply R4r (reverse)
 Rule: eq3
-        ⊥
-        (0≡S(0))
+        ⟶       ⊥
+        ⟵       (0≡S(0))
 at subpath P1 to yield:
         ite(⊥,o:Ob,read(write(A:Arr,S(0),p:Ob),S(0)))
 
 **************************************
 Step 2: apply R7r (reverse)
 Rule: if2
-        p:Ob
-        ite(⊥,o:Ob,p:Ob)
+        ⟶       p:Ob
+        ⟵       ite(⊥,o:Ob,p:Ob)
 at subpath Empty to yield:
         read(write(A:Arr,S(0),p:Ob),S(0))
 
 **************************************
 Step 3: apply R1f (forward)
 Rule: row
-        read(write(A:Arr,i:Nat,o:Ob),j:Nat)
-        ite((i:Nat≡j:Nat),o:Ob,read(A:Arr,j:Nat))
+        ⟵       read(write(A:Arr,i:Nat,o:Ob),j:Nat)
+        ⟶       ite((i:Nat≡j:Nat),o:Ob,read(A:Arr,j:Nat))
 at subpath Empty to yield:
         ite((S(0)≡S(0)),p:Ob,read(A:Arr,S(0)))
 
 **************************************
 Step 4: apply R2r (reverse)
 Rule: eq1
-        (i:Nat≡j:Nat)
-        (S(i:Nat)≡S(j:Nat))
+        ⟶       (i:Nat≡j:Nat)
+        ⟵       (S(i:Nat)≡S(j:Nat))
 at subpath P1 to yield:
         ite((0≡0),p:Ob,read(A:Arr,S(0)))
 
 **************************************
 Step 5: apply R3r (reverse)
 Rule: eq2
-        ⊤
-        (0≡0)
+        ⟶       ⊤
+        ⟵       (0≡0)
 at subpath P1 to yield:
         ite(⊤,p:Ob,read(A:Arr,S(0)))
 
 **************************************
 Step 6: apply R6r (reverse)
 Rule: if1
-        o:Ob
-        ite(⊤,o:Ob,p:Ob)
+        ⟶       o:Ob
+        ⟵       ite(⊤,o:Ob,p:Ob)
 at subpath Empty to yield:
         p:Ob
 ```

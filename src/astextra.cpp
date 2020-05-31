@@ -91,7 +91,7 @@ smt::Term pat_fun(const smt::SmtSolver & slv,
 smt::Term rterm_fun(const smt::SmtSolver & slv,
                     const Theory & thry,
                     const smt::Term & x,
-                    const int & step,
+                    const smt::Term & step,
                     const int & ruleind,
                     const std::string & dir) {
 
@@ -146,7 +146,7 @@ smt::Term rewriteTop(const smt::SmtSolver & slv,
                     const smt::Term & x,
                     const smt::Term & rTerm,
                     const Theory & t,
-                    const int & step) {
+                    const smt::Term & step) {
     Vt ruleConds{ntest(slv,x,"ast")}, ruleThens{unit(slv,x->get_sort(),"Error")};
     std::map<std::string,int> syms=symcode(t);
     for (int i=1;i<=t.rules.size();i++) { for (auto && ch : {"f","r"})   {
@@ -168,17 +168,14 @@ smt::Term rewrite(const smt::SmtSolver & slv,
                   const smt::Term & x,
                   const smt::Term & r,
                   const smt::Term & p,
-                  const int & step,
+                  const smt::Term & step,
                   const int & depth
                   ) {
     Vvvi paths = all_paths(depth,max_arity(t));
 
     smt::Term presub = getAt(slv,x,p,paths);
-    //std::cout << "presub" << std::endl;
     smt::Term subbed = rewriteTop(slv,  presub, r, t, step);
-    //std::cout << "subbed" << std::endl;
     smt::Term ret=replaceAt(slv, x, subbed, p, paths);
-    //std::cout << "ret" << std::endl;
 
     return slv->make_term(smt::Ite,ntest(slv,x,"ast"),
                       unit(slv,x->get_sort(),"Error"), ret);
