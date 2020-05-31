@@ -13,6 +13,10 @@
 #include "theory.hpp"
 #include "theories/theories.hpp"
 
+/*
+ * Accept user input and check (for a finite set of possible steps)
+ *if a rewrite is possible modulo the axioms a theory.
+ */
 
 Theory input_theory(const std::string t) {
     std::ifstream infile(t);

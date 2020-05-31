@@ -1,14 +1,14 @@
 #ifndef CVC4EXTRA
 #define CVC4EXTRA
-#include<vector>
-#include "smt-switch/smt.h"
-
-typedef std::vector<smt::Term> Vt;
 
 /*
  * Helper functions related exclusively to CVC4
  */
 
+#include<vector>
+#include "smt-switch/smt.h"
+
+typedef std::vector<smt::Term> Vt;
 
 //Declare a constant
 smt::Term mkConst(const smt::SmtSolver & slv,

@@ -1,6 +1,10 @@
 #ifndef THEORY_H
 #define THEORY_H
 
+/*
+ * Data structures and functions associated with GATs
+ */
+
 #include <vector>
 #include <string>
 #include <set>

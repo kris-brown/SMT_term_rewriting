@@ -7,13 +7,9 @@ Generalized algebraic theories (GATs) consist of:
 
 This is a very expressive language, but to be useful we must be able to identify when arbitrary terms are equal or not with respect to the equations of the theory. Although this is an undecidable problem in general, we can convert the question of whether two terms are equal into a logic problem which can be solved by a SMT solver through finite model checking. This strategy has at least two caveats: we are restricted to checking whether a path of rewrites exists up to a finite length, and we can apply rewrites only up to a finite depth from the root of any term.
 
-
-## TO-DO
- - Reimplement CVC4 code with cosa2 in order to do model checking for an arbitrary (not pre-specified) number of rewrites.
-
 ## Usage
 
-To run this, first install [CVC4](https://github.com/CVC4/CVC4) and [cosa2](https://github.com/upscale-project/cosa2), and add the install locations to `LD_LIBRARY_PATH`. Then the main program and tests can be built with `make all` and `make test` respectively.
+To run this, first install [SMT-switch](https://github.com/makaimann/smt-switch) (with [CVC4](https://github.com/CVC4/CVC4)) and [cosa2](https://github.com/upscale-project/cosa2), and add the install locations to `LD_LIBRARY_PATH`. Then the main program and tests can be built with `make all` and `make test` respectively.
 
 The main executable prompts the user for the following inputs:
 1. A user-specified theory (by name or path)
@@ -43,7 +39,7 @@ Rule eq1 "Recursively peel off successor"
     E(S(i:N),S(j:N))
 ```
 
-The second argument for Sort/Operation declarations is important for both printing and parsing expressions of the GAT. Parsing is important due to arguments 2 and 3; see examples in `data/inputs/`.
+The second argument for Sort/Operation declarations instructs the program how to both print and parse expressions of the GAT. The argument types are given by the elements in `[...]`, and operations additionally require to specify an output sort. Rules are given a name, description, and two entities which should be considered equivalent.
 
 ## Examples
 
@@ -59,10 +55,7 @@ data/cat.dat
 The executable can be called with a file, e.g. `build/ast < data/inputs/1`, which will print out the following results:
 
 ```
-
-
 2-step solution found
-
 
 Starting from (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
 
@@ -88,7 +81,6 @@ It applies the left and right identity laws, though not in the order that a huma
 Likewise, for `data/inputs/2` we model writing `p` to position 1 of some array, `o` to position 0, and then reading the value at position 1. We can prove that the result of this sequence of events is tantamount to just `p`:
 ```
 7-step solution found
-
 
 Starting from read(write(write(A:Arr,S(0),p:Ob),0,o:Ob),S(0))
 

@@ -6,7 +6,7 @@ OBJ_DIR := obj
 SRC := $(wildcard $(SRC_DIR)/*.cpp)
 OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
-OBJ_NOMAIN := $(filter-out $(OBJ_DIR)/ast.o, $(OBJ))
+OBJ_NOMAIN := $(filter-out $(OBJ_DIR)/main.o, $(OBJ))
 
 CPPFLAGS := \
  -I/Users/ksb/CVC4/local/include \

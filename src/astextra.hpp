@@ -1,9 +1,13 @@
 #ifndef ASTEXTRA
 #define ASTEXTRA
+
+/*
+ * Functions related to rewriting AST terms in swt-switch
+ */
+
 #include<vector>
 #include "astextra_basic.hpp"
 #include "smt-switch/smt.h"
-
 typedef std::map<int, smt::Term> Tmap;
 typedef std::vector<Rule> Vr;
 

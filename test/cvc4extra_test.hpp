@@ -1,7 +1,5 @@
 #include "../external/catch.hpp"
-#include <cvc4/api/cvc4cpp.h>
 #include "../src/cvc4extra.hpp"
-namespace CVC = CVC4::api;
 
 TEST_CASE("mkConst") {
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);

@@ -1,5 +1,9 @@
 #include "astextra_basic.hpp"
 
+/*
+ * Helper functions for astextra.hpp
+ */
+
 void cart_product(
     Vvi& rvvi,
     Vi&  rvi,
