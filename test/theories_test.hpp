@@ -8,8 +8,8 @@
 TEST_CASE("create_datatypes") {
     for (auto && t: alltheories()) {
         CHECK_NOTHROW(upgradeT(t));
-        CVC::Solver slv;
-        slv.setOption("produce-models", "true");
+        smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
+        slv->set_opt("produce-models", "true");
         create_datatypes(slv,t,2);
         writeModel(slv,"build/"+t.name+".dat");
     }

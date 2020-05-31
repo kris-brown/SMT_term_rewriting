@@ -25,7 +25,7 @@ TEST_CASE("transition2") {
   cosa::FunctionalTransitionSystem fts(s);
 
   smt::Sort Int = s->make_sort(smt::INT);
-  smt::Term state = fts.make_state("cnt", Int);
+  smt::Term state = fts.make_state("state", Int);
   smt::Term inp0 = fts.make_input("i0", Int);
   smt::Term inp1 = fts.make_input("i1", Int);
   smt::Term zero = s->make_term(0, Int);
@@ -98,15 +98,3 @@ TEST_CASE("transition system") {
 
 }
 
-// TEST_CASE("transition_with_datatype") {
-//   smt::SmtSolver s = smt::CVC4SolverFactory::create(false);
-
-//   Theory t=upgradeT(monoid());
-//   Vvvi paths = all_paths(2,2);
-//   CVC::Sort astSort, pathSort, ruleSort;
-//   std::tie (astSort,pathSort,ruleSort) = create_datatypes(s,t,2);
-
-//   s->set_opt("produce-models", "true");
-//   s->set_opt("incremental", "true");
-//   cosa::FunctionalTransitionSystem fts(s);
-// }

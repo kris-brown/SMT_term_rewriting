@@ -1,10 +1,10 @@
 #ifndef ASTEXTRA
 #define ASTEXTRA
 #include<vector>
-#include "cvc4/api/cvc4cpp.h"
 #include "astextra_basic.hpp"
+#include "smt-switch/smt.h"
 
-typedef std::map<int, CVC::Term> Tmap;
+typedef std::map<int, smt::Term> Tmap;
 typedef std::vector<Rule> Vr;
 
 
@@ -17,8 +17,8 @@ typedef std::vector<Rule> Vr;
  * @param depth - Arity + depth determines the possible paths
  * @return - the three sorts
  */
-std::tuple<CVC::Sort,CVC::Sort,CVC::Sort> create_datatypes(
-    CVC::Solver & slv,
+std::tuple<smt::Sort,smt::Sort,smt::Sort> create_datatypes(
+    smt::SmtSolver & slv,
     const Theory & t,
     const int & depth);
 
@@ -32,9 +32,9 @@ std::tuple<CVC::Sort,CVC::Sort,CVC::Sort> create_datatypes(
  * @param dir - Forward or reverse direction?
  * @return A CVC term which evalutes to a bool
  */
-CVC::Term pat_fun(const CVC::Solver & slv,
+smt::Term pat_fun(const smt::SmtSolver & slv,
                   const Theory & thry,
-                  const CVC::Term & x,
+                  const smt::Term & x,
                   const int & r,
                   const std::string & dir);
 
@@ -49,9 +49,9 @@ CVC::Term pat_fun(const CVC::Solver & slv,
  * @param dir - Forward or reverse direction?
  * @return A CVC term which matches the result pattern
  */
-CVC::Term rterm_fun(const CVC::Solver & slv,
+smt::Term rterm_fun(const smt::SmtSolver & slv,
                     const Theory & thry,
-                    const CVC::Term & x,
+                    const smt::Term & x,
                     const int & step,
                     const int & ruleind,
                     const std::string & dir);
@@ -66,9 +66,9 @@ CVC::Term rterm_fun(const CVC::Solver & slv,
  * @return a CVC4 subterm of xTerm
  */
 
-CVC::Term getAt(const CVC::Solver & slv,
-                const CVC::Term & xTerm,
-                const CVC::Term & pTerm,
+smt::Term getAt(const smt::SmtSolver & slv,
+                const smt::Term & xTerm,
+                const smt::Term & pTerm,
                 const Vvvi & paths);
 /**
  * Access a subterm via a path CVC term.
@@ -81,10 +81,10 @@ CVC::Term getAt(const CVC::Solver & slv,
  * @return Result of subtitution.
  */
 
-CVC::Term replaceAt(const CVC::Solver & slv,
-                    const CVC::Term & xTerm,
-                    const CVC::Term & yTerm,
-                    const CVC::Term & pTerm,
+smt::Term replaceAt(const smt::SmtSolver & slv,
+                    const smt::Term & xTerm,
+                    const smt::Term & yTerm,
+                    const smt::Term & pTerm,
                     const Vvvi & paths);
 
 /**
@@ -97,9 +97,9 @@ CVC::Term replaceAt(const CVC::Solver & slv,
  * @param step - Which rewrite step we are on (needed to make variables introduced distinct)
  * @param returns - Either Error or the substitution result
 */
-CVC::Term rewriteTop(const CVC::Solver & slv,
-                    const CVC::Term & x,
-                    const CVC::Term & rTerm,
+smt::Term rewriteTop(const smt::SmtSolver & slv,
+                    const smt::Term & x,
+                    const smt::Term & rTerm,
                     const Theory & t,
                     const int & step);
 /**
@@ -112,36 +112,12 @@ CVC::Term rewriteTop(const CVC::Solver & slv,
  * @param steps - Which rewrite step we are on
  */
 
-CVC::Term rewrite(const CVC::Solver & slv,
+smt::Term rewrite(const smt::SmtSolver & slv,
                   const Theory & t,
-                  const CVC::Term & x,
-                  const CVC::Term & r,
-                  const CVC::Term & p,
+                  const smt::Term & x,
+                  const smt::Term & r,
+                  const smt::Term & p,
                   const int & step,
                   const int & depth
                   ) ;
-/**
- * ASSERT that t1 can be rewritten into t2 in (exactly) some number of rewrites.
- *
- * @param solver
- * @param astSort - AST datatype from create_datatypes()
- * @param t - Theory which t1,t2 are terms of
- * @param t1 - starting point
- * @param t2 - destination
- * @param steps - number of rewrites expected
- * @param depth - max depth for applying rewrites
- * @returns the boolean term associated with a successful rewrite
- * @
- */
-
-std::tuple<CVC::Term,Vt,Vt,Vt> assert_rewrite(const CVC::Solver & slv,
-             const CVC::Sort & astSort,
-             const CVC::Sort & pathSort,
-             const CVC::Sort & ruleSort,
-             const Theory & t,
-             const CVC::Term & t1,
-             const CVC::Term & t2,
-             const int & steps,
-             const int & depth
-             );
 #endif

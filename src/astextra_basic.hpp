@@ -1,14 +1,13 @@
 #ifndef ASTEXTRABASIC
 #define ASTEXTRABASIC
 #include<vector>
-#include <cvc4/api/cvc4cpp.h>
+#include "smt-switch/smt.h"
 #include "theory.hpp"
 
-namespace CVC = CVC4::api;
 typedef std::vector<int> Vi;
 typedef std::vector<Vi> Vvi;
 typedef std::vector<Vvi> Vvvi;
-typedef std::vector<CVC::Term> Vt;
+typedef std::vector<smt::Term> Vt;
 
 /**
  * Cartesian product of vector of vectors, taken from: https://stackoverflow.com/a/5279601
@@ -53,8 +52,8 @@ Vvvi all_paths(const int&  depth, const int& arity);
  * @return - a CVC term (e.g. None, Empty, Error)
  */
 
-CVC::Term unit(const CVC::Solver & slv,
-               const CVC::Sort & srt,
+smt::Term unit(const smt::SmtSolver & slv,
+               const smt::Sort & srt,
                const std::string &name);
 /**
  * Number of AST selectors for the ast constructor
@@ -62,7 +61,7 @@ CVC::Term unit(const CVC::Solver & slv,
  * @param astSort - AST sort from create_datatypes()
  * @return - the highest i for which there is a selector a_i::AST
  */
-int arity(const CVC::Sort & astSort);
+int arity(const smt::Sort & astSort);
 
 /**
  * Apply node selector to an AST term.
@@ -72,8 +71,8 @@ int arity(const CVC::Sort & astSort);
  * @param astSort - input term (must be constructed from AST::ast)
  * @return - a CVC term with the node of the input
  */
-CVC::Term node(const CVC::Solver & slv,
-              const CVC::Term & x) ;
+smt::Term node(const smt::SmtSolver & slv,
+              const smt::Term & x) ;
 
 /**
  * Apply arg selector to an AST term.
@@ -83,8 +82,8 @@ CVC::Term node(const CVC::Solver & slv,
  * @return - a CVC term with the node of the input
  */
 
-CVC::Term getarg(const CVC::Solver & slv,
-                const CVC::Term & x,
+smt::Term getarg(const smt::SmtSolver & slv,
+                const smt::Term & x,
                 const int & i);
 /**
  * Construct a term with AST's ast constructor.
@@ -95,9 +94,9 @@ CVC::Term getarg(const CVC::Solver & slv,
  * @param xs - arguments of the node
  * @return - the three sorts
  */
-CVC::Term ast(const CVC::Solver & slv,
-              const CVC::Sort & astSort,
-              const CVC::Term & n,
+smt::Term ast(const smt::SmtSolver & slv,
+              const smt::Sort & astSort,
+              const smt::Term & n,
               const Vt & xs={}
               ) ;
 
@@ -112,10 +111,10 @@ CVC::Term ast(const CVC::Solver & slv,
  * @return - the modified x term
  */
 
-CVC::Term replace(const CVC::Solver & slv,
+smt::Term replace(const smt::SmtSolver & slv,
                   const int & arg,
-                  const CVC::Term & x,
-                  const CVC::Term & y);
+                  const smt::Term & x,
+                  const smt::Term & y);
 
 /**
  * Replace an arbitrary subterm, specified by a path
@@ -127,9 +126,9 @@ CVC::Term replace(const CVC::Solver & slv,
  * @return - CVC4 term representing the substitution result.
  */
 
-CVC::Term replP_fun(const CVC::Solver & slv,
-                    const CVC::Term & x,
-                    const CVC::Term & y,
+smt::Term replP_fun(const smt::SmtSolver & slv,
+                    const smt::Term & x,
+                    const smt::Term & y,
                     const Vi & p);
 /**
  * Apply selectors a1(a3(a4(...(x)))) specified by a vector
@@ -140,8 +139,8 @@ CVC::Term replP_fun(const CVC::Solver & slv,
  * @param pth - Instructions to traverse the AST, e.g. take the 4th arg, then 3rd arg, etc.
  * @return - CVC4 term representing the subterm.
  */
-CVC::Term subterm(const CVC::Solver & slv,
-                   const CVC::Term & root,
+smt::Term subterm(const smt::SmtSolver & slv,
+                   const smt::Term & root,
                    const Vi & pth);
 
 /**
@@ -162,12 +161,12 @@ std::string strhashinv(const int64_t & i);
  * @param s - a constructor name (e.g. Empty/Error/P132)
  * @returns - A CVC term which evaluates to a bool
 */
-CVC::Term test(const CVC::Solver & slv,
-               const CVC::Term & x,
+smt::Term test(const smt::SmtSolver & slv,
+               const smt::Term & x,
                const std::string & s);
 // Negation of test
-CVC::Term ntest(const CVC::Solver & slv,
-               const CVC::Term & x,
+smt::Term ntest(const smt::SmtSolver & slv,
+               const smt::Term & x,
                const std::string & s);
 
 /**
@@ -180,12 +179,12 @@ CVC::Term ntest(const CVC::Solver & slv,
  * @param step - Seed to produce distinct free variables, if any
  * @return - CVC4 term representing the subterm.
  */
-CVC::Term construct(const CVC::Solver & slv,
-                    const CVC::Sort & astSort,
+smt::Term construct(const smt::SmtSolver & slv,
+                    const smt::Sort & astSort,
                     const Theory & t,
                     const Expr & tar,
                     const Expr & src=Expr{"?",AppNode,{}},
-                    const CVC::Term & src_t=CVC::Term{},
+                    const smt::Term & src_t=smt::Term{},
                     const int & step=0);
 
 /**
@@ -197,11 +196,11 @@ CVC::Term construct(const CVC::Solver & slv,
  * @param pth - Instructions to traverse the AST, e.g. take the 4th arg, then 3rd arg, etc.
  * @return - CVC4 term representing the subterm.
  */
-CVC::Term constructRec(const CVC::Solver & slv,
-                       const CVC::Sort & astSort,
+smt::Term constructRec(const smt::SmtSolver & slv,
+                       const smt::Sort & astSort,
                        const Expr & tar,
                        const Vi & currpth,
-                       const CVC::Term & src_t,
+                       const smt::Term & src_t,
                        const std::map<size_t,Vi> & srchsh,
                        const std::map<Vi,size_t> & tarhsh,
                        const int & step,

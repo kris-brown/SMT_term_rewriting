@@ -2,7 +2,7 @@
 #include "../external/catch.hpp"
 
 // Copy other tests into this file
-#include "cosa.hpp"
+#include "cosa_test.hpp"
 #include "theory_test.hpp"
 #include "theories_test.hpp"
 #include "astextra_basic_test.hpp"

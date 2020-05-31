@@ -39,62 +39,60 @@ Vvvi all_paths(const int&  depth, const int& arity) {
         return res;
 }
 
-CVC::Term unit(const CVC::Solver & slv,
-               const CVC::Sort & srt,
+smt::Term unit(const smt::SmtSolver & slv,
+               const smt::Sort & srt,
                const std::string &name) {
-    return slv.mkTerm(CVC::APPLY_CONSTRUCTOR,
-                      srt.getDatatype().getConstructorTerm(name));
+    return slv->make_term(smt::Apply_Constructor,slv->get_constructor(srt,name));
 }
 
-int arity(const CVC::Sort & astSort) {
-    return astSort.getDatatype().getConstructor("ast").getNumSelectors() - 1;
+int arity(const smt::Sort & astSort) {
+    return astSort->get_datatype()->get_num_selectors("ast") - 1;
 }
 
-CVC::Term node(const CVC::Solver & slv,
-              const CVC::Term & x) {
-    CVC::Term s=x.getSort().getDatatype().getConstructor("ast").getSelectorTerm("node");
-    return slv.mkTerm(CVC::APPLY_SELECTOR, s, x);
+smt::Term node(const smt::SmtSolver & slv,
+              const smt::Term & x) {
+    smt::Term s= slv->get_selector(x->get_sort(),"ast","node");
+    return slv->make_term(smt::Apply_Selector, s, x);
 }
 
-CVC::Term getarg(const CVC::Solver & slv,
-                const CVC::Term & x,
+smt::Term getarg(const smt::SmtSolver & slv,
+                const smt::Term & x,
                 const int & i) {
-    CVC::Term s=x.getSort().getDatatype().getConstructor("ast"
-                ).getSelectorTerm("a"+std::to_string(i));
-    return slv.mkTerm(CVC::APPLY_SELECTOR, s, x);
+    smt::Term s=slv->get_selector(x->get_sort(),"ast","a"+std::to_string(i));
+    return slv->make_term(smt::Apply_Selector, s, x);
 }
 
 
-CVC::Term ast(const CVC::Solver & slv,
-              const CVC::Sort & astSort,
-              const CVC::Term & n,
+smt::Term ast(const smt::SmtSolver & slv,
+              const smt::Sort & astSort,
+              const smt::Term & n,
               const Vt & xs
               ) {
-    Vt args{astSort.getDatatype().getConstructorTerm("ast"), n};
+    Vt args{slv->get_constructor(astSort, "ast"), n};
     Vt conds;
-    CVC::Term err=unit(slv,astSort,"Error");
+    smt::Term err=unit(slv, astSort, "Error");
     for (auto && x: xs) {
         args.push_back(x);
         conds.push_back(test(slv,x,"Error"));
     }
-    CVC::Term condition;
-    if (xs.size()==0) condition=slv.mkFalse();
+    smt::Term condition;
+    if (xs.size()==0) condition=slv->make_term(false);
     else if (xs.size()==1) condition=conds.front();
-    else condition=slv.mkTerm(CVC::OR, conds);
+    else condition=slv->make_term(smt::Or, conds);
 
-    CVC::Term nt = unit(slv,astSort,"None");
+    smt::Term nt = unit(slv,astSort,"None");
     for (int i=0; i!=arity(astSort)-xs.size(); i++){
         args.push_back(nt);}
-    CVC::Term ret=slv.mkTerm(CVC::APPLY_CONSTRUCTOR,args);
-    return slv.mkTerm(CVC::ITE,condition,err,ret);
+    smt::Term ret=slv->make_term(smt::Apply_Constructor,args);
+    return slv->make_term(smt::Ite,condition,err,ret);
 }
 
-CVC::Term replace(const CVC::Solver & slv,
+smt::Term replace(const smt::SmtSolver & slv,
                   const int & arg,
-                  const CVC::Term & x,
-                  const CVC::Term & y) {
+                  const smt::Term & x,
+                  const smt::Term & y) {
     Vt args;
-    CVC::Sort astSort=x.getSort();
+    smt::Sort astSort=x->get_sort();
     for (int j=0; j!=arity(astSort);j++){
         if (j==arg) args.push_back(y);
         else {
@@ -103,13 +101,13 @@ CVC::Term replace(const CVC::Solver & slv,
     return ast(slv,astSort,node(slv,x),args);
 }
 
-CVC::Term replP_fun(const CVC::Solver & slv,
-                    const CVC::Term & x,
-                    const CVC::Term & y,
+smt::Term replP_fun(const smt::SmtSolver & slv,
+                    const smt::Term & x,
+                    const smt::Term & y,
                     const Vi & p) {
-    CVC::Term arg=y;
+    smt::Term arg=y;
     for (int i=0;i != p.size(); i++) {
-        CVC::Term subx=x;
+        smt::Term subx=x;
         for (int j=p.size()-1;i!=j;j--)
             subx = getarg(slv,subx,p.at(j));
         arg=replace(slv,p.at(i),subx,arg);
@@ -117,21 +115,21 @@ CVC::Term replP_fun(const CVC::Solver & slv,
     return arg;
 }
 
-CVC::Term subterm(const CVC::Solver & slv,
-                   const CVC::Term & root,
+smt::Term subterm(const smt::SmtSolver & slv,
+                   const smt::Term & root,
                    const Vi & pth) {
-    CVC::Term x = root;
-    if (x.getSort().toString()!="AST"){
+    smt::Term x = root;
+    if (x->get_sort()->to_string()!="AST"){
         throw std::runtime_error("Cannot call subterm on a non-AST");
     }
     //std::cout << "\tin subterm with pth len " << pth.size() << " and got sort " << std::endl;
 
-    CVC::DatatypeConstructor s = x.getSort().getDatatype().getConstructor("ast");
-    CVC::Term sel;
+    smt::Sort astSort = x->get_sort();
+    smt::Term sel;
     //std::cout << "\tgot DT " << std::endl;
     for (auto&& i : pth){
-        sel = s.getSelectorTerm("a"+std::to_string(i));
-        x = slv.mkTerm(CVC::APPLY_SELECTOR, sel, x);}
+        sel = slv->get_selector(astSort, "ast", "a"+std::to_string(i));
+        x = slv->make_term(smt::Apply_Selector, sel, x);}
     return x;
 }
 
@@ -156,27 +154,27 @@ std::string strhashinv(const int64_t & i) {
     }
 }
 
-CVC::Term test(const CVC::Solver & slv,
-               const CVC::Term & x,
+smt::Term test(const smt::SmtSolver & slv,
+               const smt::Term & x,
                const std::string & s) {
-    return slv.mkTerm(CVC::APPLY_TESTER,x.getSort().getDatatype().getConstructor(s).getTesterTerm(),x);
+    return slv->make_term(smt::Apply_Tester,slv->get_tester(x->get_sort(),s),x);
 }
 
-CVC::Term ntest(const CVC::Solver & slv,
-               const CVC::Term & x,
+smt::Term ntest(const smt::SmtSolver & slv,
+               const smt::Term & x,
                const std::string & s) {
-    return slv.mkTerm(CVC::NOT,test(slv,x,s));
+    return slv->make_term(smt::Not,test(slv,x,s));
 }
 
 
 // Build a term in reference to another term, e.g. y from x
 // x=(1+(2+3)) and y=((2+3)+2) then we get y=(x.1 + x.1.0)
-CVC::Term construct(const CVC::Solver & slv,
-                    const CVC::Sort & astSort,
+smt::Term construct(const smt::SmtSolver & slv,
+                    const smt::Sort & astSort,
                     const Theory & t,
                     const Expr & tar,
                     const Expr & src,
-                    const CVC::Term & src_t,
+                    const smt::Term & src_t,
                     const int & step) {
     std::map<Vi,size_t> srchash, tarh=gethash(tar);
     std::map<std::string,int> fv;
@@ -190,11 +188,11 @@ CVC::Term construct(const CVC::Solver & slv,
     return constructRec(slv,astSort,tar,{},src_t,srch,tarh,step,fv,syms);
 }
 
-CVC::Term constructRec(const CVC::Solver & slv,
-                       const CVC::Sort & astSort,
+smt::Term constructRec(const smt::SmtSolver & slv,
+                       const smt::Sort & astSort,
                        const Expr & tar,
                        const Vi & currpth,
-                       const CVC::Term & src_t,
+                       const smt::Term & src_t,
                        const std::map<size_t,Vi> & srchsh,
                        const std::map<Vi,size_t> & tarhsh,
                        const int & step,
@@ -202,18 +200,19 @@ CVC::Term constructRec(const CVC::Solver & slv,
                        const std::map<std::string,int> & syms){
 
     size_t currhsh = tarhsh.at(currpth);
+    smt::Sort Int = slv->make_sort(smt::INT);
     if (srchsh.find(currhsh)!=srchsh.end())
         return subterm(slv,src_t,srchsh.at(currhsh));
     else {
-        CVC::Term node;
+        smt::Term node;
         if (fv.find(tar.sym)!=fv.end()) {
-            node=slv.mkReal(-(10*step + fv.at(tar.sym)));
+            node=slv->make_term(-(10*step + fv.at(tar.sym)),Int);
         }
         else if (syms.find(tar.sym)!=syms.end()) {
-            node=slv.mkReal(syms.at(tar.sym));
+            node=slv->make_term(syms.at(tar.sym),Int);
          }
         else {
-            node=slv.mkReal(strhash(tar.sym));
+            node=slv->make_term(strhash(tar.sym),Int);
         }
         Vt args;
         for (int i=0;i!=tar.args.size();i++) {
@@ -253,7 +252,7 @@ Expr parseCVC(const Theory & t,
               const std::string s)  {
 
     peg::parser parser(R"(
-AST <- 'ast(' NUMBER Term* ')'
+AST <- '(ast' NUMBER Term* ')'
 Term <- AST / 'None'
 NUMBER <- < '-'? [0-9]+ >
 %whitespace  <-  [ \t\r\n,]*

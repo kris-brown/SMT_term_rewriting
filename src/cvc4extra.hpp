@@ -1,8 +1,9 @@
 #ifndef CVC4EXTRA
 #define CVC4EXTRA
 #include<vector>
-#include "cvc4/api/cvc4cpp.h"
-typedef std::vector<CVC4::api::Term> Vt;
+#include "smt-switch/smt.h"
+
+typedef std::vector<smt::Term> Vt;
 
 /*
  * Helper functions related exclusively to CVC4
@@ -10,19 +11,19 @@ typedef std::vector<CVC4::api::Term> Vt;
 
 
 //Declare a constant
-CVC4::api::Term mkConst(const CVC4::api::Solver & slv,
+smt::Term mkConst(const smt::SmtSolver & slv,
                   const std::string & name,
-                  const CVC4::api::Term & t);
+                  const smt::Term & t);
 
 
 //Chain a series of IF-THEN pairs with an ELSE condition into one term.
-CVC4::api::Term ITE(const CVC4::api::Solver & slv,
+smt::Term ITE(const smt::SmtSolver & slv,
                     const Vt & ifs,
                     const Vt & thens,
-                    const CVC4::api::Term & otherwise);
+                    const smt::Term & otherwise);
 
 // Print model (if it is sat) to a path
-void writeModel(CVC4::api::Solver & slv, std::string pth);
+void writeModel(smt::SmtSolver & slv, std::string pth);
 
 #endif
 

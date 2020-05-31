@@ -4,7 +4,10 @@
 #include <fstream>
 #include <sstream>
 
-#include "cvc4/api/cvc4cpp.h"
+#include "core/fts.h"
+#include "engines/bmc.h"
+#include "smt-switch/smt.h"
+#include "smt-switch/cvc4_factory.h"
 #include "cvc4extra.hpp"
 #include "astextra.hpp"
 #include "theory.hpp"
@@ -42,48 +45,66 @@ int main(int argc, char** argv)
     depth=std::stoi(depthstr);
 
     std::string code=symcodestr(t);
-    CVC::Solver slv;
-    slv.setOption("produce-models", "true");
-    mkConst(slv,"dic",slv.mkString(code, true));
+    smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
+    slv->set_opt("produce-models", "true");
+    //mkConst(slv,"dic",slv.mkString(code, true));
 
     std::cout << "\n\nComputing...\n" << std::endl;
 
     // Declare datatypes
-    CVC::Sort astSort,pathSort,ruleSort;
+    smt::Sort astSort,pathSort,ruleSort;
     std::tie (astSort,pathSort,ruleSort) = create_datatypes(slv,t,depth);
-    writeModel(slv,"model.dat");
+    //writeModel(slv,"model.dat");
 
 
-    CVC::Term c1=construct(slv,astSort,t,t1),c2=construct(slv,astSort,t,t2);
-    CVC::Term x1=mkConst(slv,"initial",c1), x2=mkConst(slv,"final",c2);
+    smt::Term c1=construct(slv,astSort,t,t1), c2=construct(slv,astSort,t,t2);
+    smt::Term x1=mkConst(slv,"initial",c1), x2=mkConst(slv,"final",c2);
 
-    CVC::Term r;
-    Vt xs,ps,rs;
-    std::tie (r,xs,ps,rs)=assert_rewrite(slv, astSort, pathSort,ruleSort, t, x1, x2, steps, depth);
-    slv.assertFormula(r);
 
-    if (!slv.checkSat().isSat()) {
-        std::cout << "\nNo solution found" << std::endl;
-        slv.resetAssertions();
-        mkConst(slv,"init",c1); mkConst(slv,"fin",c2);
-        mkConst(slv,"dic",slv.mkString(code, true));
-        slv.assertFormula(slv.mkTerm(CVC::NOT,r));
-    } else {
+    cosa::FunctionalTransitionSystem fts(slv);
+    smt::Term state = fts.make_state("x", astSort);
+    smt::Sort Int = slv->make_sort(smt::INT);
+    smt::Term cnt = fts.make_state("cnt", Int);
+    fts.constrain_init(slv->make_term(smt::Equal, state, x1));
+    fts.constrain_init(slv->make_term(smt::Equal, cnt, slv->make_term(0, Int)));
+    smt::Term r = fts.make_input("r", ruleSort);
+    smt::Term p = fts.make_input("p", pathSort);
+    smt::Term prop = slv->make_term(
+        smt::Not, slv->make_term(smt::Equal,state, x2));
+
+    cosa::Property property(fts, prop);
+    cosa::Bmc bmc(property, slv);
+    std::string div="\n**************************************\n";
+
+    std::vector<smt::UnorderedTermMap> wit;
+
+    switch (bmc.check_until(5)) {
+       case cosa::FALSE :
         std::cout << "\nSolution found" << std::endl;
-        std::string div="\n**************************************\n";
-        std::cout << "Starting with:\n\t" << print(t,uninfer(
-            parseCVC(t,slv.getValue(xs.at(0)).toString())));
-        for (int i=0;i!=steps;i++){
-            std::string rval = slv.getValue(rs.at(i)).toString();
+        bmc.witness(wit);
+        for (int i=0;i!=wit.size();i++) {
+            smt::UnorderedTermMap vars=wit.at(i);
+            std::string rval = vars.at(r)->to_string();
             Rule rule=t.rules.at(std::stoi(rval.substr(1,rval.size()-2))-1);
-            Expr parsed=parseCVC(t,slv.getValue(xs.at(i+1)).toString());
+            Expr parsed=parseCVC(t,vars.at(state)->to_string());
             std::cout << div << "Step " << i << ": apply " << rval << " ("
                     << ((rval.back()=='f') ? "forward" : "reverse")
                     << ")\n" << print(t,rule) << "\nat subpath "
-                    << slv.getValue(ps.at(i)) << " to yield:\n\t"
+                    << vars.at(p) << " to yield:\n\t"
                     << print(t,uninfer(parsed)) << std::endl;
+
         }
-    }
+
+        break;
+       case cosa::TRUE :
+        std::cout << "\nNo rewrite possible" << std::endl;
+        break;
+        case cosa::UNKNOWN :
+            std::cout << "\nNo solution found" << std::endl;
+        break;
+   }
+
+
     writeModel(slv,"model.dat");
     return 0;
 }

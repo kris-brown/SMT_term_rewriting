@@ -2,55 +2,51 @@
 #include "cvc4extra.hpp"
 
 
-std::tuple<CVC::Sort,CVC::Sort,CVC::Sort> create_datatypes(
-        CVC::Solver & slv,
+std::tuple<smt::Sort,smt::Sort,smt::Sort> create_datatypes(
+        smt::SmtSolver & slv,
         const Theory & t,
         const int & depth) {
     const int arity = max_arity(t);
     const Vvvi paths = all_paths(depth,arity);
-    CVC::Sort Int = slv.getIntegerSort();
+    smt::Sort Int = slv->make_sort(smt::INT);
     const char fr[2]  = {'f','r'}; // Forward/reverse
 
     // AST
-    CVC::DatatypeDecl astSpec = slv.mkDatatypeDecl("AST");
-    astSpec.addConstructor(CVC::DatatypeConstructorDecl("Error"));
-    astSpec.addConstructor(CVC::DatatypeConstructorDecl("None"));
-    CVC::DatatypeConstructorDecl ast("ast");
-    ast.addSelector("node", Int);
+    smt::DatatypeDecl astSpec = slv->make_datatype_decl("AST");
+    slv->add_constructor(astSpec,slv->make_datatype_constructor_decl("Error"));
+    slv->add_constructor(astSpec,slv->make_datatype_constructor_decl("None"));
+    smt::DatatypeConstructorDecl ast = slv->make_datatype_constructor_decl("ast");
+    slv->add_selector(ast, "node", Int);
     for (int i=0; i<=arity;i++)
-        ast.addSelectorSelf("a"+std::to_string(i));
+        slv->add_selector_self(ast,"a"+std::to_string(i));
 
-    astSpec.addConstructor(ast);
-    CVC::Sort astSort = slv.mkDatatypeSort(astSpec);
+    slv->add_constructor(astSpec, ast);
+    smt::Sort astSort = slv->make_sort(astSpec);
 
     // PATH
-    CVC::DatatypeDecl pathSpec = slv.mkDatatypeDecl("Path");
-    pathSpec.addConstructor(CVC::DatatypeConstructorDecl("Empty"));
+    smt::DatatypeDecl pathSpec = slv->make_datatype_decl("Path");
+    slv->add_constructor(pathSpec,slv->make_datatype_constructor_decl("Empty"));
     for (auto&& pp : paths){ for (auto&& p: pp){
-            CVC::DatatypeConstructorDecl pcon("P"+join(p));
-            pathSpec.addConstructor(pcon);
+            slv->add_constructor(pathSpec,slv->make_datatype_constructor_decl("P"+join(p)));
     }}
-    CVC::Sort pathSort = slv.mkDatatypeSort(pathSpec);
+    smt::Sort pathSort = slv->make_sort(pathSpec);
 
     // RULE
-    Vi rules; // +1/-1, +2/-2, etc. for each rule+direction
-    CVC::DatatypeDecl ruleSpec = slv.mkDatatypeDecl("Rule");
+    smt::DatatypeDecl ruleSpec = slv->make_datatype_decl("Rule");
     for (int i=1; i!=std::max(2,static_cast<int>(t.rules.size()+1)); i++){ for (auto&& d : fr) {
             std::string name="R"+std::to_string(i)+ d;
-            CVC::DatatypeConstructorDecl rcon(name);
-            ruleSpec.addConstructor(rcon);
-            rules.push_back(i*(d=='f' ? 1 : -1));
+            slv->add_constructor(ruleSpec,slv->make_datatype_constructor_decl(name));
     }}
-    CVC::Sort ruleSort = slv.mkDatatypeSort(ruleSpec);
+    smt::Sort ruleSort = slv->make_sort(ruleSpec);
 
     return std::make_tuple(astSort,pathSort,ruleSort);
 }
 
 //-----------------------------------------------------------------
 
-CVC::Term pat_fun(const CVC::Solver & slv,
+smt::Term pat_fun(const smt::SmtSolver & slv,
                   const Theory & thry,
-                  const CVC::Term & x,
+                  const smt::Term & x,
                   const int & r,
                   const std::string & dir) {
 
@@ -64,40 +60,37 @@ CVC::Term pat_fun(const CVC::Solver & slv,
     for (auto&& [k,v] : groups) {
         Vi rep = v.front();  // choose representative of equiv class
         //std::cout << "GETTING repE with rep size " << rep.size() << std::endl ;
-        CVC::Term repE = subterm(slv, x, rep);
+        smt::Term repE = subterm(slv, x, rep);
         Expr repX = subexpr(term, rep);
         const int sym = syms.at(repX.sym);
 
         // Node+leaf constraint on representative if not a variable
         if (repX.kind != VarNode){
-            //std::cout << "Subexpr " << repX << "ADDING NODE CONSTRAINT " << sym << std::endl;
-            CVC::Term andarg=slv.mkTerm(CVC::EQUAL,node(slv,repE),slv.mkReal(sym));
-            //std::cout << andarg << "   IS " << slv.checkEntailed(andarg).isEntailed() << "  " << const_cast<CVC::Solver &>(slv).simplify(node(slv,repE))  << std::endl;
+            smt::Term andarg=slv->make_term(smt::Equal,node(slv,repE),slv->make_term(sym, slv->make_sort(smt::INT)));
             andargs.push_back(andarg);
-            for (int i=repX.args.size();i!=arity(x.getSort());i++){
+            for (int i=repX.args.size();i!=arity(x->get_sort());i++){
                 andargs.push_back(test(slv,getarg(slv,repE,i),"None")); }
         }
 
-        //std::cout << "ADDING EQ CONSTRAINT " << std::endl;
 
         // Eq constraint on all other members of eq class
         for (auto && e : v) {
             if (e!=rep){
-                CVC::Term e_ = subterm(slv,x,e);
-                andargs.push_back(slv.mkTerm(CVC::EQUAL,e_,repE));
+                smt::Term e_ = subterm(slv,x,e);
+                andargs.push_back(slv->make_term(smt::Equal,e_,repE));
             }
         }
     }
 
-    CVC::Term ret = slv.mkTerm(CVC::AND,andargs);
+    smt::Term ret = slv->make_term(smt::And,andargs);
     return ret;
 }
 
 
 
-CVC::Term rterm_fun(const CVC::Solver & slv,
+smt::Term rterm_fun(const smt::SmtSolver & slv,
                     const Theory & thry,
-                    const CVC::Term & x,
+                    const smt::Term & x,
                     const int & step,
                     const int & ruleind,
                     const std::string & dir) {
@@ -114,15 +107,15 @@ CVC::Term rterm_fun(const CVC::Solver & slv,
     // Construct target in CVC4, making reference to source when possible
 
     //std::cout << "Calling construct with tar" << tar << " and src " << src << std::endl;
-    CVC::Term res=construct(slv,x.getSort(),thry,tar,src,x,step);
+    smt::Term res=construct(slv,x->get_sort(),thry,tar,src,x,step);
     return res;
 }
 
-CVC::Term getAt(const CVC::Solver & slv,
-                const CVC::Term & xTerm,
-                const CVC::Term & pTerm,
+smt::Term getAt(const smt::SmtSolver & slv,
+                const smt::Term & xTerm,
+                const smt::Term & pTerm,
                 const Vvvi & paths) {
-    CVC::Term err=unit(slv,xTerm.getSort(),"Error");
+    smt::Term err=unit(slv,xTerm->get_sort(),"Error");
     Vt pathConds{ntest(slv,xTerm,"ast"),
                  test(slv, pTerm, "Empty")};
     Vt getAtThens{err, xTerm};
@@ -133,12 +126,12 @@ CVC::Term getAt(const CVC::Solver & slv,
     return ITE(slv, pathConds, getAtThens, err);
 }
 
-CVC::Term replaceAt(const CVC::Solver & slv,
-                    const CVC::Term & xTerm,
-                    const CVC::Term & yTerm,
-                    const CVC::Term & pTerm,
+smt::Term replaceAt(const smt::SmtSolver & slv,
+                    const smt::Term & xTerm,
+                    const smt::Term & yTerm,
+                    const smt::Term & pTerm,
                    const Vvvi & paths) {
-    CVC::Term err=unit(slv,xTerm.getSort(),"Error");
+    smt::Term err=unit(slv,xTerm->get_sort(),"Error");
 
     Vt pathConds{ntest(slv,xTerm,"ast"), test(slv,pTerm,"Empty")};
     Vt replaceAtThens{err, yTerm};
@@ -149,74 +142,45 @@ CVC::Term replaceAt(const CVC::Solver & slv,
     return ITE(slv, pathConds, replaceAtThens, err);
 }
 
-CVC::Term rewriteTop(const CVC::Solver & slv,
-                    const CVC::Term & x,
-                    const CVC::Term & rTerm,
+smt::Term rewriteTop(const smt::SmtSolver & slv,
+                    const smt::Term & x,
+                    const smt::Term & rTerm,
                     const Theory & t,
                     const int & step) {
-    Vt ruleConds{ntest(slv,x,"ast")}, ruleThens{unit(slv,x.getSort(),"Error")};
+    Vt ruleConds{ntest(slv,x,"ast")}, ruleThens{unit(slv,x->get_sort(),"Error")};
     std::map<std::string,int> syms=symcode(t);
     for (int i=1;i<=t.rules.size();i++) { for (auto && ch : {"f","r"})   {
-        CVC::Term req=test(slv,rTerm,"R"+std::to_string(i)+ch);
+        smt::Term req=test(slv,rTerm,"R"+std::to_string(i)+ch);
         //std::cout << "making pat" << i << ch << std::endl;
-        CVC::Term rpat=pat_fun(slv,t,x,i,ch);
+        smt::Term rpat=pat_fun(slv,t,x,i,ch);
         //std::cout << "making term" <<  i << ch << std::endl;
-        CVC::Term rt=rterm_fun(slv,t, x, step,i,ch);
-        ruleConds.push_back(slv.mkTerm(CVC::AND,req,rpat));
+        smt::Term rt=rterm_fun(slv,t, x, step,i,ch);
+        ruleConds.push_back(slv->make_term(smt::And,req,rpat));
         ruleThens.push_back(rt);
     }}
 
-    return ITE(slv, ruleConds, ruleThens, unit(slv,x.getSort(),"Error"));
+    return ITE(slv, ruleConds, ruleThens, unit(slv,x->get_sort(),"Error"));
 }
 
 
-CVC::Term rewrite(const CVC::Solver & slv,
+smt::Term rewrite(const smt::SmtSolver & slv,
                   const Theory & t,
-                  const CVC::Term & x,
-                  const CVC::Term & r,
-                  const CVC::Term & p,
+                  const smt::Term & x,
+                  const smt::Term & r,
+                  const smt::Term & p,
                   const int & step,
                   const int & depth
                   ) {
     Vvvi paths = all_paths(depth,max_arity(t));
 
-    CVC::Term presub = getAt(slv,x,p,paths);
+    smt::Term presub = getAt(slv,x,p,paths);
     //std::cout << "presub" << std::endl;
-    CVC::Term subbed = rewriteTop(slv,  presub, r, t, step);
+    smt::Term subbed = rewriteTop(slv,  presub, r, t, step);
     //std::cout << "subbed" << std::endl;
-    CVC::Term ret=replaceAt(slv, x, subbed, p, paths);
+    smt::Term ret=replaceAt(slv, x, subbed, p, paths);
     //std::cout << "ret" << std::endl;
 
-    return slv.mkTerm(CVC4::api::ITE,ntest(slv,x,"ast"),
-                      unit(slv,x.getSort(),"Error"), ret);
+    return slv->make_term(smt::Ite,ntest(slv,x,"ast"),
+                      unit(slv,x->get_sort(),"Error"), ret);
 }
 
-std::tuple<CVC::Term,Vt,Vt,Vt> assert_rewrite(
-    const CVC::Solver & slv,
-    const CVC::Sort & astSort,
-    const CVC::Sort & pathSort,
-    const CVC::Sort & ruleSort,
-    const Theory & t,
-    const CVC::Term & t1,
-    const CVC::Term & t2,
-    const int & steps,
-    const int & depth
-    ) {
-    //std::cout << c1 << "\n\n" << c2 << std::endl;
-    Vt ps,rs,xs{t1};
-    for (int i=0;i<steps;i++){
-        std::string istr=std::to_string(i);
-
-        //std::cout <<  "REWRITE STEP " << i << std::endl;
-        ps.push_back(slv.mkConst(pathSort,"p"+istr));
-        rs.push_back(slv.mkConst(ruleSort,"r"+istr));
-        CVC::Term newx=rewrite(slv, t, xs.at(i),rs.at(i),ps.at(i),i,depth);
-        slv.assertFormula(test(slv, newx, "ast"));
-        for (auto && x:xs){
-            slv.assertFormula(slv.mkTerm(CVC::NOT,slv.mkTerm(CVC::EQUAL,x,newx)));}
-        mkConst(slv,"step"+istr,newx);
-        xs.push_back(newx);
-    }
-    CVC::Term ret= mkConst(slv, "rw", slv.mkTerm(CVC::EQUAL,xs.back(),t2));
-    return std::make_tuple(ret,xs,ps,rs);
-}

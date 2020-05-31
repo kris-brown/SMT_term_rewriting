@@ -1,35 +1,35 @@
 #include <fstream>
 #include "cvc4extra.hpp"
+#include "smt-switch/cvc4_factory.h"
 
 
-CVC4::api::Term mkConst(const CVC4::api::Solver & slv,
+smt::Term mkConst(const smt::SmtSolver & slv,
                   const std::string & name,
-                  const CVC4::api::Term & t) {
-    CVC4::api::Term v = slv.mkConst(t.getSort(), name);
-    slv.assertFormula(slv.mkTerm(CVC4::api::EQUAL, v,t));
+                  const smt::Term & t) {
+    smt::Term v = slv->make_symbol(name, t->get_sort());
+    slv->assert_formula(slv->make_term(smt::Equal, v,t));
     return v;
 }
 
-CVC4::api::Term ITE(const CVC4::api::Solver & slv,
+smt::Term ITE(const smt::SmtSolver & slv,
                     const Vt & ifs,
                     const Vt & thens,
-                    const CVC4::api::Term & otherwise){
+                    const smt::Term & otherwise){
     if (ifs.size()!=thens.size())
         throw std::runtime_error("Called ITE with unequal ifs/thens");
 
-    CVC4::api::Term ret=otherwise;
+    smt::Term ret=otherwise;
     for (auto i = ifs.size(); i--;){
-        ret = slv.mkTerm(CVC4::api::ITE,ifs.at(i), thens.at(i), ret);
+        ret = slv->make_term(smt::Ite,ifs.at(i), thens.at(i), ret);
     }
     return ret;
 }
 
-void writeModel(CVC4::api::Solver & slv, std::string pth) {
-    CVC4::api::Result res = slv.checkSat();
-    if (res.isSat()){ // Write model to file
-        std::ofstream outfile;
-        outfile.open("build/"+pth);
-        slv.printModel(outfile);
-        outfile.close();
+void writeModel(smt::SmtSolver & slv, std::string pth) {
+    smt::Result res = slv->check_sat();
+    if (res.is_sat()){ // Write model to file
+        //smt::CVC4Solver cslv = std::static_pointer_cast<smt::CVC4Solver>(slv);
+        //FOR SOME REASON NOT IN NAMESPACE?
+        //cslv.solver.writeModel("build/"+pth);
     }
 }
