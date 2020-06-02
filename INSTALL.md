@@ -13,10 +13,10 @@ make install
 ```
 
 # Step 2
-Make the install locations available via environment variables. Supposing `cosa2` was installed to the directory `/some_path/`, a simple way to do this is to edit your `~/.bashrc` with the following line:
+Make the install locations available via environment variables. Supposing `cosa2` was installed to the directory `/some_path/`, a simple way to do this is to edit your `~/.bashrc` (then `source` it) with the following line:
 ```
-export LD_LIBRARY_PATH=/some_path/cosa2/deps/smt-switch/local/lib:/some_path/cosa2/local/lib:$LD_LIBRARY_PATH
-export LIBRARY_PATH=/some_path/cosa2/deps/smt-switch/local/lib:/some_path/cosa2/local/lib:$LIBRARY_PATH
+export LD_LIBRARY_PATH=/some_path/cosa2/local/lib:/some_path/cosa2/deps/smt-switch/local/lib:$LD_LIBRARY_PATH
+export LIBRARY_PATH=/some_path/cosa2/local/lib:/some_path/cosa2/deps/smt-switch/local/lib:$LIBRARY_PATH
 export CPLUS_INCLUDE_PATH=/some_path/cosa2/local/include/cosa2:/some_path/cosa2/deps/smt-switch/local/include:$CPLUS_INCLUDE_PATH
 ```
 
