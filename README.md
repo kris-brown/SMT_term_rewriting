@@ -43,12 +43,12 @@ The second argument for Sort/Operation declarations instructs the program how to
 
 ## Examples
 
-Consider the example using the theory of categories in `data/inputs/1` which searches for a rewrite path of length 2:
+Consider the example using the theory of categories in `data/inputs/1` which searches for a rewrite path up to length 10:
 ```
 data/cat.dat
 (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
 (id(A:Ob) ⋅ x:(A:Ob⇒Q:Ob))
-2
+10
 3
 ```
 
