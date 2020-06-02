@@ -20,7 +20,7 @@ export LIBRARY_PATH=/some_path/cosa2/deps/smt-switch/local/lib:/some_path/cosa2/
 export CPLUS_INCLUDE_PATH=/some_path/cosa2/local/include/cosa2:/some_path/cosa2/deps/smt-switch/local/include:$CPLUS_INCLUDE_PATH
 ```
 
-Manually adding these paths with `-I` and `-L` flags to the `CPPFLAGS` and `LDFLAGS` variables (respectively) of the `Makefile` would avoid making global changes to your system.
+As an alternative to the above, you can manually adding these paths with `-I` and `-L` flags to the `CPPFLAGS` and `LDFLAGS` variables (respectively) of the `Makefile` would avoid making global changes to your system.
 
 # Step 3
 Clone this project and build with the following commands:

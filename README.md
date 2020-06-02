@@ -7,10 +7,6 @@ Generalized algebraic theories (GATs) consist of:
 
 This is a very expressive language, but to be useful we must be able to identify when arbitrary terms are equal or not with respect to the equations of the theory. Although this is an undecidable problem in general, we can convert the question of whether two terms are equal into a logic problem which can be solved by a SMT solver through finite model checking. This strategy has at least two caveats: we are restricted to checking whether a path of rewrites exists up to a finite length, and we can apply rewrites only up to a finite depth from the root of any term.
 
-## Install
-
-See `INSTALL.md`
-
 ## Usage
 
 The main executable prompts the user for the following inputs:
