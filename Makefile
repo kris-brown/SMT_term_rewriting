@@ -8,15 +8,9 @@ OBJ := $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 OBJ_NOMAIN := $(filter-out $(OBJ_DIR)/main.o, $(OBJ))
 
-CPPFLAGS := \
- -I/Users/ksb/CVC4/local/include \
- -I/Users/ksb/cosa2clone/deps/btor2tools/src \
- -I/Users/ksb/cosa2clone/deps/smt-switch/local/include \
- -I/Users/ksb/cosa2clone/local/include/cosa2
+CPPFLAGS :=
 CFLAGS   := -std=c++17 -Wall
-LDFLAGS  := \
- -L/Users/ksb/cosa2clone/deps/smt-switch/local/lib \
- -L/Users/ksb/cosa2clone/local/lib
+LDFLAGS  :=
 LDLIBS   := -lcosa2 -lsmt-switch-cvc4 -lsmt-switch -lgmp
 
 .PHONY: all clean test
