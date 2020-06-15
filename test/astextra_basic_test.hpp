@@ -61,7 +61,7 @@ TEST_CASE("construct"){
     slv->set_opt("produce-models", "true");
 
     Theory t=monoid();
-    std::map<std::string,int> sc=symcode(t);
+    std::map<std::string,int> sc=t.symcode();
 
     smt::Sort astSort;
     std::tie (astSort,std::ignore,std::ignore) = create_datatypes(slv,t,2);
@@ -70,7 +70,7 @@ TEST_CASE("construct"){
     smt::Term x1 = mkConst(slv,"x",ast(slv, astSort,  slv->make_term(sc["x"],Int), {ob1}));
     smt::Term y1 = mkConst(slv,"y",ast(slv, astSort,  slv->make_term(sc["y"],Int), {ob1}));
     smt::Term q1 = mkConst(slv, "q",ast(slv,astSort,slv->make_term(strhash("q"),Int),{ob1}));
-    Expr Ob=Srt("Ob"), x={"x",VarNode,{Ob}},y={"y",VarNode,{Ob}}, q={"q",VarNode,{Ob}};
+    Expr Ob=Srt("Ob"), x={"x",Expr::VarNode,{Ob}},y={"y",Expr::VarNode,{Ob}}, q={"q",Expr::VarNode,{Ob}};
     smt::Term x2 = mkConst(slv,"x2",construct(slv,astSort,t,x));
     smt::Term q2 = mkConst(slv,"q2",construct(slv,astSort,t,q));
 
@@ -105,16 +105,16 @@ TEST_CASE("replPfun") {
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
 
     slv->set_opt("produce-models", "true");
-    Theory t=upgradeT(monoid());
+    Theory t=monoid().upgrade();
     Vvvi paths = all_paths(2,2);
     smt::Sort astSort, pathSort;
     std::tie (astSort,pathSort,std::ignore) = create_datatypes(slv,t,2);
 
     Expr Ob=Srt("Ob"),x=Var("x",Ob),y=Var("y",Ob);
     Expr xy=App("M",{x,y}), xx=App("M",{x,x});
-    smt::Term xy_=mkConst(slv,"xy",construct(slv,astSort,t,upgrade(t,xy)));
-    smt::Term xx_=mkConst(slv,"xx",construct(slv,astSort,t,upgrade(t,xx)));
-    smt::Term x_=mkConst(slv,"x",construct(slv,astSort,t,upgrade(t,x)));
+    smt::Term xy_=mkConst(slv,"xy",construct(slv,astSort,t,t.upgrade(xy)));
+    smt::Term xx_=mkConst(slv,"xx",construct(slv,astSort,t,t.upgrade(xx)));
+    smt::Term x_=mkConst(slv,"x",construct(slv,astSort,t,t.upgrade(x)));
     smt::Term p2 = unit(slv,pathSort,"P2");
     smt::Term res = replP_fun(slv,xy_,x_,{2});
     smt::Term result=mkConst(slv,"result",res);
@@ -137,7 +137,7 @@ TEST_CASE("parseCVC") {
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
 
     slv->set_opt("produce-models", "true");
-    Theory t=upgradeT(cat());
+    Theory t=cat().upgrade();
 
     smt::Sort astSort;
     std::tie (astSort,std::ignore,std::ignore) = create_datatypes(slv,t,2);
@@ -146,7 +146,7 @@ TEST_CASE("parseCVC") {
     slv->check_sat();
     std::string to_parse=slv->get_value(x)->to_string();
     Expr expr_= parseCVC(t,to_parse); // REMOVED SIMPLIFY...will cause a bug?
-    CHECK(expr==expr_);
+    CHECK((expr==expr_));
 
     //Now something with variables that are not in the theory
     Expr o=Srt("Ob"),q=Var("Q",{o}),z=Var("Z",{o});
@@ -154,7 +154,7 @@ TEST_CASE("parseCVC") {
     smt::Term m_=mkConst(slv,"m",construct(slv,astSort,t,m));
     slv->check_sat();
     Expr x2_= parseCVC(t,slv->get_value(m_)->to_string());
-    CHECK(m==x2_);
+    CHECK((m==x2_));
     writeModel(slv,"test/parsecvc.dat");
 
 }

@@ -34,5 +34,7 @@ $(OBJ_DIR)/test.o:
 
 clean:
 	$(RM) $(OBJ)
-	rm -f build/ast
-	rm -f build/runtest
+	$(RM) $(OBJ_DIR)/ast.o
+	$(RM) $(OBJ_DIR)/test.o
+	$(RM) -f build/ast
+	$(RM) -f build/runtest

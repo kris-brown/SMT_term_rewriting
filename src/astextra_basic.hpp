@@ -183,7 +183,7 @@ smt::Term construct(const smt::SmtSolver & slv,
                     const smt::Sort & astSort,
                     const Theory & t,
                     const Expr & tar,
-                    const Expr & src=Expr{"?",AppNode,{}},
+                    const Expr & src=Expr{"?",Expr::AppNode,{}},
                     const smt::Term & src_t=smt::Term{},
                     const smt::Term & step=nullptr);
 

@@ -6,7 +6,7 @@ std::tuple<smt::Sort,smt::Sort,smt::Sort> create_datatypes(
         smt::SmtSolver & slv,
         const Theory & t,
         const int & depth) {
-    const int arity = max_arity(t);
+    const int arity = t.max_arity();
     const Vvvi paths = all_paths(depth,arity);
     smt::Sort Int = slv->make_sort(smt::INT);
     const char fr[2]  = {'f','r'}; // Forward/reverse
@@ -50,10 +50,10 @@ smt::Term pat_fun(const smt::SmtSolver & slv,
                   const int & r,
                   const std::string & dir) {
 
-    std::map<std::string,int> syms=symcode(thry);
+    std::map<std::string,int> syms=thry.symcode();
     Rule rule = thry.rules.at(r-1);
     Expr term = dir=="f" ? rule.t1 : rule.t2;
-    std::map<size_t,Vvi> groups = distinct(gethash(term));
+    std::map<size_t,Vvi> groups = Expr::distinct(term.gethash());
     Vt andargs; // Represent term as list of constraints
 
     //std::cout << "ENTERING FOR LOOP for pattern " << term << std::endl;
@@ -61,11 +61,11 @@ smt::Term pat_fun(const smt::SmtSolver & slv,
         Vi rep = v.front();  // choose representative of equiv class
         //std::cout << "GETTING repE with rep size " << rep.size() << std::endl ;
         smt::Term repE = subterm(slv, x, rep);
-        Expr repX = subexpr(term, rep);
+        Expr repX = term.subexpr(rep);
         const int sym = syms.at(repX.sym);
 
         // Node+leaf constraint on representative if not a variable
-        if (repX.kind != VarNode){
+        if (repX.kind != Expr::VarNode){
             smt::Term andarg=slv->make_term(smt::Equal,node(slv,repE),slv->make_term(sym, slv->make_sort(smt::INT)));
             andargs.push_back(andarg);
             for (int i=repX.args.size();i!=arity(x->get_sort());i++){
@@ -100,9 +100,9 @@ smt::Term rterm_fun(const smt::SmtSolver & slv,
     Expr tar = dir=="f" ? rule.t2 : rule.t1;
 
     // Get hash for each node
-    std::map<Vi,size_t> srchash=gethash(src), tarhash=gethash(tar);
+    std::map<Vi,size_t> srchash=src.gethash(), tarhash=tar.gethash();
     std::map<size_t,Vi> srchashrev;
-    for (auto && [k,v] : distinct(srchash)) srchashrev[k]=v.front();
+    for (auto && [k,v] : Expr::distinct(srchash)) srchashrev[k]=v.front();
 
     // Construct target in CVC4, making reference to source when possible
 
@@ -148,7 +148,7 @@ smt::Term rewriteTop(const smt::SmtSolver & slv,
                     const Theory & t,
                     const smt::Term & step) {
     Vt ruleConds{ntest(slv,x,"ast")}, ruleThens{unit(slv,x->get_sort(),"Error")};
-    std::map<std::string,int> syms=symcode(t);
+    std::map<std::string,int> syms=t.symcode();
     for (int i=1;i<=t.rules.size();i++) { for (auto && ch : {"f","r"})   {
         smt::Term req=test(slv,rTerm,"R"+std::to_string(i)+ch);
         //std::cout << "making pat" << i << ch << std::endl;
@@ -171,7 +171,7 @@ smt::Term rewrite(const smt::SmtSolver & slv,
                   const smt::Term & step,
                   const int & depth
                   ) {
-    Vvvi paths = all_paths(depth,max_arity(t));
+    Vvvi paths = all_paths(depth,t.max_arity());
 
     smt::Term presub = getAt(slv,x,p,paths);
     smt::Term subbed = rewriteTop(slv,  presub, r, t, step);

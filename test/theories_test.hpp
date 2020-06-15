@@ -7,7 +7,7 @@
 
 TEST_CASE("create_datatypes") {
     for (auto && t: alltheories()) {
-        CHECK_NOTHROW(upgradeT(t));
+        CHECK_NOTHROW(t.upgrade());
         smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
         slv->set_opt("produce-models", "true");
         create_datatypes(slv,t,2);
@@ -17,6 +17,8 @@ TEST_CASE("create_datatypes") {
 
 TEST_CASE("parse") {
     for (auto && t: alltheories()) {
-        CHECK_NOTHROW(parseTheory("data/"+t.name+".dat"));
+        CHECK_NOTHROW(Theory::parseTheory("data/"+t.name+".dat"));
     }
 }
+
+

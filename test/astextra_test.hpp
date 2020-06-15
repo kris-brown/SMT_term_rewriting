@@ -8,7 +8,7 @@ TEST_CASE("patfun") {
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
 
     slv->set_opt("produce-models", "true");
-    Theory t=upgradeT(cat());
+    Theory t=cat().upgrade();
 
     smt::Sort astSort;
     std::tie (astSort,std::ignore,std::ignore) = create_datatypes(slv,t,2);
@@ -28,9 +28,9 @@ TEST_CASE("patfun") {
     CHECK(slv->check_sat().is_sat());
 
     // id.(f.g.h) pattern matches with id.f
-    Expr fgh=uninfer(t.rules.at(2).t1);
-    Expr ida=uninfer(expr.args.at(1));
-    Expr expr3=upgrade(t, App("cmp",{ida,fgh}));
+    Expr fgh=t.rules.at(2).t1.uninfer();
+    Expr ida=expr.args.at(1).uninfer();
+    Expr expr3=t.upgrade(App("cmp",{ida,fgh}));
     smt::Term x3=mkConst(slv,"x3",construct(slv,astSort,t,expr3));
     smt::Term p3=pat_fun(slv,t,x3,1,"r");
     slv->assert_formula(p3);
@@ -40,7 +40,7 @@ TEST_CASE("patfun") {
 }
 
 TEST_CASE("rterm_fun") {
-    Theory t=upgradeT(cat());
+    Theory t=cat().upgrade();
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
 
     slv->set_opt("produce-models", "true");
@@ -63,7 +63,7 @@ TEST_CASE("getAt") {
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
 
     slv->set_opt("produce-models", "true");
-    Theory t=upgradeT(cat());
+    Theory t=cat().upgrade();
 
     Expr f_gh=t.rules.at(2).t1;
     Expr f = f_gh.args.at(1);
@@ -107,16 +107,15 @@ TEST_CASE("replaceAt") {
      smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
 
     slv->set_opt("produce-models", "true");
-    Theory t=upgradeT(monoid());
+    Theory t=monoid().upgrade();
     Vvvi paths = all_paths(2,2);
     smt::Sort astSort, pathSort;
     std::tie (astSort,pathSort,std::ignore) = create_datatypes(slv,t,2);
 
-
     Expr x_yz=t.rules.at(2).t1, x=x_yz.args.at(1);
-    Expr u_xyz = uninfer(x_yz);
-    Expr ux = uninfer(x), uy = u_xyz.args.at(1).args.at(0);
-    Expr x_yx=upgrade(t,App("M",{ux,App("M",{uy,ux})}));
+    Expr u_xyz = x_yz.uninfer();
+    Expr ux = x.uninfer(), uy = u_xyz.args.at(1).args.at(0);
+    Expr x_yx=t.upgrade(App("M",{ux,App("M",{uy,ux})}));
     smt::Term xyz_=mkConst(slv,"xyz",construct(slv,astSort,t,x_yz));
     smt::Term xyx_=mkConst(slv,"xyx",construct(slv,astSort,t,x_yx));
     smt::Term x_=mkConst(slv,"x",construct(slv,astSort,t,x));

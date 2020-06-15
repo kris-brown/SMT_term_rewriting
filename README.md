@@ -7,6 +7,13 @@ Generalized algebraic theories (GATs) consist of:
 
 This is a very expressive language (more background [here](https://epatters.github.io/Catlab.jl/latest/#What-is-a-GAT?-1)) which can formally model many interesting topics, but to be useful we must be able to identify when arbitrary terms are equal or not with respect to the equations of the theory. Although this is an undecidable problem in general, we can convert the question of whether two terms are equal into a logic problem which can be solved by a SMT solver through finite model checking. This strategy has at least two caveats: we are restricted to checking whether a path of rewrites exists up to a finite length, and we can apply rewrites only up to a finite depth from the root of any term.
 
+## To-do
+- Add docstrings to theory.hpp
+- Benchmark with examples from the [Rewrite Engine Competition](http://rec.gforge.inria.fr/)
+- Optimize general performance
+- Proofs that a term *cannot* be rewritten to another
+- Whether or not term X *can be unified* with term Y, rather than just considering pure rewriting.
+
 ## Usage
 
 The main executable prompts the user for the following inputs:

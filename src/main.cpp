@@ -22,9 +22,9 @@ Theory input_theory(const std::string t) {
     std::ifstream infile(t);
     if (infile.fail()){
         infile.close();
-        return upgradeT(get_theory(t));
+        return get_theory(t).upgrade();
     } else {
-        return upgradeT(parseTheory(t));
+        return Theory::parseTheory(t).upgrade();
     }
 }
 
@@ -40,11 +40,11 @@ int main(int argc, char** argv)
     Theory t = input_theory(theoryname);
     std::cout << "Give an initial term in this theory: ";
     getline(std::cin, term1);
-    Expr t1=upgrade(t, parse_expr(t, term1));
+    Expr t1=t.upgrade(t.parse_expr(term1));
     std::cout << "Give a final term in this theory: ";
     getline(std::cin, term2);
     assert(term1!=term2);
-    Expr t2=upgrade(t,parse_expr(t,term2));
+    Expr t2=t.upgrade(t.parse_expr(term2));
     std::cout << "Give max number rewrite steps: ";
     getline(std::cin, stepsstr);
     steps=std::stoi(stepsstr);
@@ -52,7 +52,6 @@ int main(int argc, char** argv)
     getline(std::cin, depthstr);
     depth=std::stoi(depthstr);
 
-    std::string code=symcodestr(t);
     smt::SmtSolver slv = smt::CVC4SolverFactory::create(false);
     slv->set_opt("produce-models", "true");
 
@@ -106,9 +105,9 @@ int main(int argc, char** argv)
             int forward=(int)(rval.back()=='f');
             std::cout << sep << "Step " << i << ": apply " << rval << " ("
                     << (forward ? "forward" : "reverse")
-                    << ")\n" << print(t,rule,forward) << "\nat subpath "
+                    << ")\n" << t.print(rule,forward) << "\nat subpath "
                     << wit.at(i).at(p) << " to yield:\n\t"
-                    << print(t,uninfer(parsed)) << std::endl;
+                    << t.print(parsed.uninfer()) << std::endl;
         }
         break;
 

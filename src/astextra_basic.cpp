@@ -185,14 +185,14 @@ smt::Term construct(const smt::SmtSolver & slv,
             slv->make_term(0,slv->make_sort(smt::INT));
 
 
-    std::map<Vi,size_t> srchash, tarh=gethash(tar);
+    std::map<Vi,size_t> srchash, tarh = tar.gethash();
     std::map<std::string,int> fv;
     std::map<size_t,Vi> srch;
     if (src.sym!="?") {
-        srchash=gethash(src);
-        fv=freevar(tar,src);}
-    for (auto && [k,v] : distinct(srchash)) srch[k]=v.front(); //reverse
-    std::map<std::string,int> syms = symcode(t);
+        srchash=src.gethash();
+        fv=tar.freevar(src);}
+    for (auto && [k,v] : Expr::distinct(srchash)) srch[k]=v.front(); //reverse
+    std::map<std::string,int> syms = t.symcode();
 
     return constructRec(slv,astSort,tar,{},src_t,srch,tarh,step2,fv,syms);
 }
@@ -239,18 +239,18 @@ smt::Term constructRec(const smt::SmtSolver & slv,
 }
 
 Expr parseCVCast(const Theory & t, std::shared_ptr<peg::Ast> ast) {
-    std::string sym; NodeType nt; Vx args;
+    std::string sym; Expr::NodeType nt; Ve args;
     long i=std::stol(ast->nodes.at(0)->token);
-    for (auto &&[k,v] : symcode(t)) {
+    for (auto &&[k,v] : t.symcode()) {
         if (v==i){
             sym=k;
-            if (t.ops.find(sym)!=t.ops.end()) nt=AppNode;
-            else if(t.sorts.find(sym)!=t.sorts.end()) nt=SortNode;
-            else nt=VarNode;
+            if (t.ops.find(sym)!=t.ops.end()) nt=Expr::AppNode;
+            else if(t.sorts.find(sym)!=t.sorts.end()) nt=Expr::SortNode;
+            else nt=Expr::VarNode;
         }
     }
     if (sym.empty()){
-        nt=VarNode; sym=strhashinv(i);
+        nt=Expr::VarNode; sym=strhashinv(i);
     }
     for (int i=0;i != ast->nodes.size(); i++) {
         std::shared_ptr<peg::Ast> a=ast->nodes.at(i);
