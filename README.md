@@ -1,6 +1,7 @@
 # SMT_term_rewriting
 
 Generalized algebraic theories (GATs) consist of:
+
 - declaring types of entities (called sorts, which can depend on values, e.g. "List of length `i`"),
 - operator declarations (which can be thought of as pure functions among terms inhabiting the above sorts)
 - equations (notions of when two sorts or two terms are equal).
@@ -8,15 +9,17 @@ Generalized algebraic theories (GATs) consist of:
 This is a very expressive language (more background [here](https://epatters.github.io/Catlab.jl/latest/#What-is-a-GAT?-1)) which can formally model many interesting topics, but to be useful we must be able to identify when arbitrary terms are equal or not with respect to the equations of the theory. Although this is an undecidable problem in general, we can convert the question of whether two terms are equal into a logic problem which can be solved by a SMT solver through finite model checking. This strategy has at least two caveats: we are restricted to checking whether a path of rewrites exists up to a finite length, and we can apply rewrites only up to a finite depth from the root of any term.
 
 ## To-do
-- Add docstrings to theory.hpp
+
 - Benchmark with examples from the [Rewrite Engine Competition](http://rec.gforge.inria.fr/)
 - Optimize general performance
-- Proofs that a term *cannot* be rewritten to another
-- Whether or not term X *can be unified* with term Y, rather than just considering pure rewriting.
+- More test coverage
+- Proofs that a term _cannot_ be rewritten to another
+- Whether or not term X _can be unified_ with term Y, rather than just considering pure rewriting.
 
 ## Usage
 
 The main executable prompts the user for the following inputs:
+
 1. A user-specified theory (by name or path)
 2. A starting term in that theory
 3. A goal term in that theory
@@ -24,6 +27,7 @@ The main executable prompts the user for the following inputs:
 5. Max depth in the abstract syntax tree for which we want to be able to apply rewrite rules.
 
 GATs can be declared in two ways. Firstly, they can be constructed with a C++ API, with examples in the `src/theories` folder. However, it's also possible to point to a file which specifies a GAT. Each theory currently in `src/theories` has an equivalent model data file in the `data` folder to show how this is done. This is a snippet of a [theory of arrays](https://ece.uwaterloo.ca/~agurfink/stqam/assets/pdf/W07-FOL.pdf#page=28) (`data/natarray.dat`):
+
 ```
 Sort Ob "Ob" "Some datatype that can be stored in an array" []
 Sort N "Nat" "A natural number: 0, 1, 2, ..." []
@@ -49,6 +53,7 @@ The second argument for Sort/Operation declarations instructs the program how to
 ## Examples
 
 Consider the example using a formalization of [categories](https://en.wikipedia.org/wiki/Category_theory) in `data/inputs/1` which searches for a rewrite path up to length 10:
+
 ```
 data/cat.dat
 (x:(A:Ob⇒Q:Ob) ⋅ id(Q:Ob))
@@ -80,54 +85,54 @@ Rule: idr
 at subpath P2 to yield:
         (id(A:Ob) ⋅ (x:(A:Ob⇒Q:Ob)))
 
-````
-It applies the left and right identity laws, though not in the order that a human would choose.
+```
 
-Likewise, for `data/inputs/2` we model writing `p` to position 1 of some array, `o` to position 0, and then reading the value at position 1. We can prove that the result of this sequence of events is tantamount to just `p`:
+Likewise, for `data/inputs/2` we model writing `p` to position 1 of some array, `o` to position `0`, and then reading the value at position `1`. We can prove that the result of this sequence of events is tantamount to just `p`:
+
 ```
 7-step solution found
 
-Starting from read(write(write(A:Arr,S(0),p:Ob),0,o:Ob),S(0))
+Starting from read(write(write(A,1,p),0,o),1)
 
 **************************************
 Step 0: apply R1f (forward)
 Rule: row
-        ⟵       read(write(A:Arr,i:Nat,o:Ob),j:Nat)
-        ⟶       ite((i:Nat≡j:Nat),o:Ob,read(A:Arr,j:Nat))
+        ⟵       read(write(A,i,o),j)
+        ⟶       ite((i≡j),o,read(A,j))
 at subpath Empty to yield:
-        ite((0≡S(0)),o:Ob,read(write(A:Arr,S(0),p:Ob),S(0)))
+        ite((0≡1),o,read(write(A,1,p),1))
 
 **************************************
 Step 1: apply R4r (reverse)
 Rule: eq3
         ⟶       ⊥
-        ⟵       (0≡S(0))
+        ⟵       (0≡1)
 at subpath P1 to yield:
-        ite(⊥,o:Ob,read(write(A:Arr,S(0),p:Ob),S(0)))
+        ite(⊥,o,read(write(A,1,p),1))
 
 **************************************
 Step 2: apply R7r (reverse)
 Rule: if2
-        ⟶       p:Ob
-        ⟵       ite(⊥,o:Ob,p:Ob)
+        ⟶       p
+        ⟵       ite(⊥,o,p)
 at subpath Empty to yield:
-        read(write(A:Arr,S(0),p:Ob),S(0))
+        read(write(A,1,p),1)
 
 **************************************
 Step 3: apply R1f (forward)
 Rule: row
-        ⟵       read(write(A:Arr,i:Nat,o:Ob),j:Nat)
-        ⟶       ite((i:Nat≡j:Nat),o:Ob,read(A:Arr,j:Nat))
+        ⟵       read(write(A,i,o),j)
+        ⟶       ite((i≡j),o,read(A,j))
 at subpath Empty to yield:
-        ite((S(0)≡S(0)),p:Ob,read(A:Arr,S(0)))
+        ite((1≡1),p,read(A,1))
 
 **************************************
 Step 4: apply R2r (reverse)
 Rule: eq1
-        ⟶       (i:Nat≡j:Nat)
-        ⟵       (S(i:Nat)≡S(j:Nat))
+        ⟶       (i≡j)
+        ⟵       (S(i)≡S(j))
 at subpath P1 to yield:
-        ite((0≡0),p:Ob,read(A:Arr,S(0)))
+        ite((0≡0),p,read(A,1))
 
 **************************************
 Step 5: apply R3r (reverse)
@@ -135,13 +140,13 @@ Rule: eq2
         ⟶       ⊤
         ⟵       (0≡0)
 at subpath P1 to yield:
-        ite(⊤,p:Ob,read(A:Arr,S(0)))
+        ite(⊤,p,read(A,1))
 
 **************************************
 Step 6: apply R6r (reverse)
 Rule: if1
-        ⟶       o:Ob
-        ⟵       ite(⊤,o:Ob,p:Ob)
+        ⟶       o
+        ⟵       ite(⊤,o,p)
 at subpath Empty to yield:
-        p:Ob
+        p
 ```

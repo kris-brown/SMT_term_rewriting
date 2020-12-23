@@ -6,3 +6,4 @@
 build/**/*.dat
 build/ast
 build/runtest
+lldb.txt
