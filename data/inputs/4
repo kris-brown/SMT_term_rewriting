@@ -1,0 +1,6 @@
+data/smc.dat
+((id(A:Ob) ⊗ id(B:Ob)) ⋅ (◊(A:Ob) ⊗ ◊(B:Ob)))
+(id(I) ⊗ id(I))
+10
+5
+

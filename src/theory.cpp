@@ -21,7 +21,7 @@ void Expr::validate_expr()
     else if (kind == Expr::VarNode)
     {
         if (args.size() != 1)
-            throw std::runtime_error("Var does not have 1 arg");
+            throw std::runtime_error("Var '" + sym + "' has " + std::to_string(args.size()) + " != 1 args");
         else if (args.at(0).kind != Expr::SortNode)
             throw std::runtime_error("Var arg is not sort");
     }
@@ -157,9 +157,7 @@ std::string Theory::print(const Rule &x, const int &dir) const
 }
 
 // Pretty print
-std::string Theory::
-    print()
-{
+std::string Theory::print(){
     Vs lines;
     for (auto &&[v, s] : sorts)
         lines.push_back(print(s));
@@ -171,8 +169,6 @@ std::string Theory::
     return name + "\n\n" + join(lines, "\n");
 }
 
-// Render all locally-known information about an Expr
-// Which notably does not include the patterns of operators/sorts
 std::ostream &operator<<(std::ostream &out, const Expr &e)
 {
     if (e.kind == Expr::VarNode)
@@ -181,7 +177,7 @@ std::ostream &operator<<(std::ostream &out, const Expr &e)
     {
         Expr::NodeType firstchild = e.args.size() ? e.args.at(0).kind : Expr::VarNode;
         bool sorted_app = (firstchild == Expr::SortNode) && (e.kind == Expr::AppNode);
-        if (sorted_app && e.args.size())
+        if (sorted_app && e.args.size() > 1)
             out << "(";
         out << e.sym;
         if (e.args.size() > (sorted_app ? 1 : 0))
@@ -249,7 +245,7 @@ Item <- SortDecl / OpDecl / Rule
 SortDecl <- 'Sort' WORD PHRASE PHRASE '[' Term* ']'
 OpDecl <- 'Op' WORD PHRASE PHRASE Term '[' Term* ']'
 Rule <- 'Rule' WORD PHRASE Term Term
-Term <- Var / WORD '(' Term* ')' / WORD
+Term <- Var / WORD '(' Term* ')' / WORD / '[[' Term '|' Term ']]'
 Var <- WORD ':' Term
 WORD <- < [a-zA-Z_] [a-zA-Z0-9_]* >
 PHRASE <- < '"' (!'"' .)* '"' >
@@ -329,6 +325,19 @@ Expr Theory::parseExpr(std::shared_ptr<peg::Ast> ast, KindDict kd)
     std::string name;
     Expr::NodeType nt;
     Ve args;
+
+    // Handle a term with a manual type annotation specially
+    if (ast->choice == 3) {
+        assert(ast->nodes.size()==2);
+        Expr trm = parseExpr(ast->nodes.at(0), kd);
+        Expr typ = parseExpr(ast->nodes.at(1), kd);
+        Ve newargs={typ};
+        for (auto &&e : trm.args)
+            newargs.push_back(e);
+        return {trm.sym, trm.kind, newargs};
+    }
+
+
 
     if (ast->nodes.empty())
         name = ast->token; // no argument case
@@ -536,8 +545,12 @@ MatchDict Expr::patmatch(const Expr &expr) const
         // In case of variable, the whole expr matches
         result.insert({sym, expr});
 
-        // Also match the sort of the variable
-        mergedict(result, args.at(0).patmatch(expr.args.at(0)));
+        // Also match the sort of the variable to type of expr, which is 1st arg
+        assert(!expr.args.empty());
+        assert(args.size() == 1);
+        Expr exprSort = expr.args.at(0);
+        assert(exprSort.kind == SortNode);
+        mergedict(result, args.at(0).patmatch(exprSort));
 
         return result;
     }
@@ -569,11 +582,21 @@ Expr Expr::sub(const MatchDict &matchdict) const
     }
 }
 
+bool Expr::inferred() const
+ {
+     if (kind==AppNode) {
+         return !(args.empty()) && (args.at(0).kind == SortNode);
+     } else {
+         return true;
+     }
+ }
+
 Expr Expr::infer(const SortDeclDict &sorts,
                  const OpDeclDict &ops,
                  const std::string &sym,
                  const Ve &args)
 {
+
     // Handle error of unknown operator
     if (ops.find(sym) == ops.end())
         throw std::runtime_error("inferring a symbol (" + sym + ")not in ops");
@@ -598,7 +621,8 @@ Expr Expr::infer(const SortDeclDict &sorts,
         throw std::runtime_error(buf.str());
     }
 
-    // Determine relation between the actual arguments and the canonical arguments. Store results in a dictionary binding variables to Exprs.
+    // Determine relation between the actual arguments and the canonical arguments.
+    // Store results in a dictionary binding variables to Exprs.
     MatchDict match;
     for (int i = 0; i != op_pat_args.size(); i++)
     {
@@ -624,18 +648,28 @@ Expr Expr::infer(const SortDeclDict &sorts,
         }
     }
     // Result sort is just a substitution of the canonical result sort
-    return ops.at(sym).sort.sub(match);
+    Expr res=ops.at(sym).sort.sub(match);
+     //upgrade because the op return type pattern may contain a function which needs its
+     // type to be inferred
+    return res.upgrade(sorts, ops);
 }
 
 // Elaborate type information by recursively calling infer
 Expr Expr::upgrade(const SortDeclDict &sorts,
                    const OpDeclDict &ops) const
 {
+    // Avoid upgrading something that has already been upgraded
+    if (this->kind==AppNode && !this->args.empty() && this->args.at(0).kind ==SortNode) {
+        Ve recargs = {this->args.at(0)};
+        for (int i = 1; i != args.size(); i++)
+            {recargs.push_back(this->args.at(i).upgrade(sorts, ops));}
+        return {this->sym, this->kind, recargs};
+    }
     Ve recargs, newargs;
     for (auto &&a : args)
         recargs.push_back(a.upgrade(sorts, ops));
     if (kind == Expr::AppNode)
-        newargs.push_back(infer(sorts, ops, sym, recargs));
+        {newargs.push_back(infer(sorts, ops, sym, recargs));}
     for (auto &&a : recargs)
         newargs.push_back(a);
 
@@ -800,7 +834,6 @@ Ve Theory::parse_exprs(const std::string &pth) const
 
 Expr Theory::parse_expr(const std::string &expr) const
 {
-
     peg::parser parser(mkParser().c_str());
     parser.enable_ast();
     assert((bool)parser == true);

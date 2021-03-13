@@ -87,6 +87,10 @@ public:
 
     bool operator!=(Expr const &that) const;
 
+    /**
+     * Render all locally-known information about an Expr
+     * Which notably does not include the patterns of operators/sorts
+     */
     friend std::ostream &operator<<(std::ostream &out, const Expr &e);
 
     /**
@@ -95,6 +99,12 @@ public:
      * @returns a mapping from hashes to a list of subpaths that share the same value
      */
     static std::map<size_t, Vvi> distinct(const std::map<Vi, size_t> &hashes);
+
+
+    /*
+    * Whether or not the first argument of the term contains the type info
+    */
+    bool inferred() const;
 
     /**
      * Compute the sort of a function application via pattern matching

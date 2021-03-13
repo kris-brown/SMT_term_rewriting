@@ -1,0 +1,172 @@
+smc
+
+Sort Ob "Ob" "Objects in a category" []
+
+Sort Hom "({}⇒{})" "Hom-set of morphisms" [A:Ob, B:Ob]
+
+Op id "id({})" "Identity morphism" Hom(A:Ob, A:Ob) [A:Ob]
+
+Op cmp "({} ⋅ {})" "Composition of morphisms" Hom(A:Ob, C:Ob) [f:Hom(A:Ob,B:Ob), g:Hom(B:Ob, C:Ob)]
+
+Op munit "I" "Monoidal unit" Ob []
+
+Op prodOb "({} ⨂ {})" "Monoidal product of objects" Ob [A:Ob, B:Ob]
+
+Op prod "({} ⊗ {})" "Monoidal product of morphisms" Hom(prodOb(A:Ob, C:Ob), prodOb(B:Ob, D:Ob)) [f:Hom(A:Ob,B:Ob), g:Hom(C:Ob, D:Ob)]
+
+Op swap "σ({}, {})" "Braid morphism of monoidal product" Hom(prodOb(A:Ob, B:Ob), prodOb(B:Ob, A:Ob)) [A:Ob, B:Ob]
+
+Op copy "Δ({})" "Copy/diagonal operator" Hom(A:Ob, prodOb(A:Ob, A:Ob)) [A: Ob]
+
+Op del "◊({})" "Delete operator" Hom(A: Ob, munit) [A: Ob]
+
+Op pair "pair({}, {})" "Pair morphisms" Hom(A:Ob, prodOb(B:Ob, C:Ob)) [f:Hom(A:Ob, B:Ob), g:Hom(A:Ob, C:Ob)]
+
+Op p1 "π₁({}, {})" "Project out first element" Hom(prodOb(A:Ob, B:Ob), A:Ob) [A:Ob, B:Ob]
+
+Op p2 "π₂({}, {})" "Project out first element" Hom(prodOb(A:Ob, B:Ob), B:Ob) [A:Ob, B:Ob]
+
+Rule idl "Identity morphism left identity"
+      f:Hom(A:Ob,B:Ob)
+      cmp(id(A:Ob), f:Hom(A:Ob,B:Ob))
+
+Rule idr "Identity morphism right identity"
+      f:Hom(A:Ob,B:Ob)
+      cmp(f:Hom(A:Ob,B:Ob), id(B:Ob))
+
+Rule asc "Morphism composition associativity"
+      cmp(
+          f:Hom(A:Ob,B:Ob),
+          cmp(g:Hom(B:Ob, C:Ob),
+              h:Hom(C:Ob, D:Ob)
+             )
+         )
+      cmp(
+            cmp(f:Hom(A:Ob,B:Ob),
+                g:Hom(B:Ob, C:Ob)
+               ),
+            h:Hom(C:Ob, D:Ob)
+         )
+
+Rule prodOb_idl "Monoidal product on objects, left-unit"
+    A:Ob
+    prodOb(munit, A:Ob)
+
+
+Rule prodOb_idr "Monoidal product on objects, right-unit"
+    A:Ob
+    prodOb(A: Ob, munit)
+
+Rule prodObSym "Monoidal product on objects is symmetric"
+     prodOb(A: Ob, B: Ob)
+     prodOb(B: Ob, A: Ob)
+
+Rule prodObAsc "Monoidal product on objects is associative"
+     prodOb(A: Ob, prodOb(B: Ob, C: Ob))
+     prodOb(prodOb(A: Ob, B: Ob), C: Ob)
+
+Rule prod_idl "Monoidal product on morphisms, left-unit"
+    f:Hom(A:Ob, B:Ob)
+    prod(id(munit), f:Hom(A:Ob, B:Ob))
+
+Rule prod_idr "Monoidal product on morphisms, right-unit"
+    f:Hom(A:Ob,B:Ob)
+    prod(f:Hom(A:Ob, B:Ob), id(munit))
+
+Rule id_prodOb "Identity morphism on monoidal unit"
+    id(prodOb(A:Ob, B:Ob))
+    prod(id(A:Ob), id(B:Ob))
+
+Rule interchange "Interchange law"
+    cmp(prod(ff:Hom(AA:Ob, BB:Ob), gg:Hom(XX:Ob, YY:Ob)),
+        prod(hh:Hom(BB:Ob, CC:Ob), kk:Hom(YY:Ob, ZZ:Ob)))
+    prod(cmp(ff:Hom(AA:Ob, BB:Ob), hh:Hom(BB:Ob, CC:Ob)),
+         cmp(gg:Hom(XX:Ob, YY:Ob), kk:Hom(YY:Ob, ZZ:Ob)))
+
+Rule swapswap "Involutivity axiom"
+    cmp(swap(A:Ob, B:Ob), swap(B:Ob, A:Ob))
+    id(prodOb(A:Ob, B:Ob))
+
+Rule swapl "Swap coherence axiom left"
+    [[cmp(
+        prod(swap(A:Ob, B:Ob), id(C:Ob)),
+        prod(id(B:Ob), swap(A:Ob, C:Ob)))
+      | Hom(prodOb(prodOb(A:Ob, B:Ob),C:Ob),
+            prodOb(B:Ob,prodOb(C:Ob,A:Ob))) ]]
+    swap(A:Ob, prodOb(B:Ob, C: Ob))
+
+Rule swapr "Swap coherence axiom right"
+    [[cmp(
+        prod(id(A:Ob), swap(B:Ob, C:Ob)),
+        prod(swap(A:Ob, C:Ob), id(B:Ob)))
+     | Hom(prodOb(A:Ob,prodOb(B:Ob,C:Ob)),
+           prodOb(A:Ob,prodOb(C:Ob,B:Ob))) ]]
+    swap(prodOb(A:Ob, B: Ob), C:Ob)
+
+Rule swapnat "Swap naturality axiom"
+    cmp(
+        prod(f:Hom(A:Ob,B:Ob), g:Hom(C:Ob, D:Ob)),
+        swap(B: Ob, D: Ob))
+    cmp(
+        swap(A:Ob, C: Ob),
+        prod(g:Hom(C:Ob, D:Ob), f:Hom(A:Ob,B:Ob)))
+
+Rule comonoid1 ""
+    cmp(copy(A:Ob), prod(copy(A:Ob), id(A:Ob)))
+    cmp(copy(A:Ob), prod(id(A:Ob), copy(A:Ob)))
+
+Rule comonoid2 ""
+    cmp(copy(A:Ob), prod(del(A:Ob), id(A:Ob)))
+    id(A:Ob)
+
+Rule comonoid3 ""
+    cmp(copy(A:Ob), prod(id(A:Ob), del(A:Ob)))
+    id(A:Ob)
+
+Rule comonoid4 ""
+    cmp(copy(A:Ob), swap(A:Ob, A:Ob))
+    copy(A:Ob)
+
+Rule copycoherence1 ""
+    copy(prodOb(A:Ob, B:Ob))
+    [[cmp(
+        prod(copy(A:Ob), copy(B:Ob)),
+        prod(
+            prod(id(A:Ob),
+            swap(A:Ob,B:Ob)),
+            id(B:Ob)
+        )
+    ) | Hom(prodOb(A:Ob,B:Ob),prodOb(prodOb(A:Ob,A:Ob)),prodOb(B:Ob,B:Ob)) ]]
+
+Rule copycoherence2 ""
+    del(prodOb(A:Ob, B:Ob))
+    prod(del(A:Ob), del(B:Ob))
+
+
+Rule copycoherence3 ""
+    copy(munit)
+    id(munit)
+
+Rule copycoherence4 ""
+    del(munit)
+    id(munit)
+
+Rule defpair "defines pairing"
+    pair(f:Hom(C:Ob, A:Ob), g:Hom(C:Ob, B:Ob))
+    cmp(copy(C:Ob), prod(f:Hom(C:Ob, A:Ob), g:Hom(C:Ob, B:Ob)))
+
+Rule defp1 "defines first projection"
+    p1(A:Ob, B:Ob)
+    prod(id(A:Ob),del(B:Ob))
+
+Rule defp2 "defines second projection"
+    p1(A:Ob, B:Ob)
+    prod(del(A:Ob), id(B:Ob))
+
+Rule cartesian1 "Naturality axiom 1"
+    cmp(f:Hom(A:Ob, B:Ob), copy(B:Ob))
+    cmp(copy(A:Ob), prod(f:Hom(A:Ob, B:Ob),f:Hom(A:Ob, B:Ob)))
+
+Rule cartesian2 "Naturality axiom 2"
+    cmp(f:Hom(A:Ob, B:Ob), del(B:Ob))
+    del(A:Ob)
