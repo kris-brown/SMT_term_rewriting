@@ -21,8 +21,10 @@ Make the install locations available via environment variables. Supposing `pono`
 ```
 export LD_LIBRARY_PATH=/some_path/pono/local/lib:/some_path/pono/deps/smt-switch/local/lib:$LD_LIBRARY_PATH
 export LIBRARY_PATH=/some_path/pono/local/lib:/some_path/pono/deps/smt-switch/local/lib:$LIBRARY_PATH
-export CPLUS_INCLUDE_PATH=/some_path/pono/local/include/pono:/some_path/pono/deps/smt-switch/local/include:$CPLUS_INCLUDE_PATH
+export CPLUS_INCLUDE_PATH=/some_path/pono/local/include/pono:/some_path/pono/deps/smt-switch/local/include:/some_path/pono/deps/smt-switch/deps/CVC4/src/:/some_path/pono/deps/smt-switch/deps/CVC4/src/include:/some_path/pono/deps/smt-switch/deps/CVC4/build/src/:$CPLUS_INCLUDE_PATH
 ```
+
+
 
 As an alternative to the above, you can manually add these paths with `-I` and `-L` flags to the `CPPFLAGS` and `LDFLAGS` variables (respectively) of the `Makefile`, which would avoid making global changes to your system.
 
