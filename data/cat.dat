@@ -14,7 +14,7 @@ Rule idl "Left identity"
 
 Rule idr "Right identity"
       f:Hom(A:Ob,B:Ob)
-      [[cmp(f:Hom(A:Ob,B:Ob), id(B:Ob)) | Hom(A:Ob,B:Ob)]]
+      cmp(f:Hom(A:Ob,B:Ob), id(B:Ob))
 
 Rule asc "Associativity"
       cmp(
