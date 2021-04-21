@@ -110,8 +110,8 @@ int main(int argc, char **argv)
         smt::Not, slv->make_term(smt::Equal, state, c2));
 
     // Final setup
-    pono::Property property(fts, prop);
-    pono::Bmc bmc(property, slv);
+    pono::Property property(slv, prop);
+    pono::Bmc bmc(property, fts, slv);
     std::vector<smt::UnorderedTermMap> wit;
 
     // Do the model checking

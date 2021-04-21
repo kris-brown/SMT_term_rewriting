@@ -42,8 +42,8 @@ TEST_CASE("transition system")
   // Check for false property: cnt < 5
   smt::Term p = s->make_term(smt::BVUlt, cnt, s->make_term(5, bvsort4));
 
-  pono::Property prop(fts, p);
-  pono::Bmc bmc(prop, s);
+  pono::Property prop(s, p);
+  pono::Bmc bmc(prop, fts, s);
 
   // Run finite model checking and collect result
   pono::ProverResult pr = bmc.check_until(10);
@@ -111,8 +111,8 @@ TEST_CASE("transition2")
   smt::Term p = s->make_term(
       smt::Not, s->make_term(smt::Equal, state, n3));
 
-  pono::Property prop(fts, p);
-  pono::Bmc bmc(prop, s);
+  pono::Property prop(s, p);
+  pono::Bmc bmc(prop, fts, s);
   pono::ProverResult pr = bmc.check_until(5);
 
   writeModel(s, "test/transition2.dat");
